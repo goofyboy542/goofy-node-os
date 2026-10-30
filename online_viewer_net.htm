@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class work math</title>
+<meta name="description" content="GOOFY NODE OS v1.0.2 - a single-file browser hacker operating system simulator. powered by oogy.">
+<style>
+:root{
+  --bg:#050806;--bg2:#030604;--acc:#00ff66;--acc-rgb:0,255,102;--on-acc:#021206;
+  --forest:#0a2912;--forest2:#0e381a;--text:#e6ffe6;--text2:#c8f5cf;--muted:#85a38c;
+  --border:#164024;--err:#ff3344;--ok:#39ff6a;--warn:#ffb800;
+  --panel:rgba(6,12,8,.94);--tb:44px;
+  --mono:Consolas,'Cascadia Mono','Lucida Console','Courier New',monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+::selection{background:rgba(var(--acc-rgb),.32);color:#fff}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:#030604}
+::-webkit-scrollbar-thumb{background:var(--forest2);border:1px solid var(--border)}
+::-webkit-scrollbar-thumb:hover{background:rgba(var(--acc-rgb),.35)}
+.hidden{display:none!important}
+.glow{text-shadow:0 0 8px rgba(var(--acc-rgb),.55),0 0 22px rgba(var(--acc-rgb),.2)}
+.acc{color:var(--acc)}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.tiny{font-size:11px}
+.upper{text-transform:uppercase;letter-spacing:.14em}
+.err-t{color:var(--err)}
+.ok-t{color:var(--ok)}
+.warn-t{color:var(--warn)}
+.h2{font-size:20px;font-weight:700;color:var(--acc);letter-spacing:.06em}
+.h3{font-size:15px;font-weight:700;color:var(--acc);letter-spacing:.08em;margin:0 0 8px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:8px}
+.grow{flex:1}
+.sep{height:1px;background:var(--border);margin:14px 0}
+
+/* ---------- CRT overlay ---------- */
+#crt{position:fixed;inset:0;pointer-events:none;z-index:99999;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,14,5,.26) 2px,rgba(0,14,5,.26) 4px);
+  animation:scanMove 9s linear infinite, crtFlicker 3s steps(1) infinite}
+#crt::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(0,0,0,.55) 100%)}
+#crt::after{content:"";position:absolute;left:0;right:0;top:0;height:140px;
+  background:linear-gradient(to bottom,rgba(var(--acc-rgb),0),rgba(var(--acc-rgb),.035),rgba(var(--acc-rgb),0));
+  animation:crtRoll 7s linear infinite}
+body.no-scan #crt{display:none}
+@keyframes scanMove{from{background-position:0 0}to{background-position:0 160px}}
+@keyframes crtRoll{from{transform:translateY(-160px)}to{transform:translateY(110vh)}}
+@keyframes crtFlicker{0%{opacity:1}48%{opacity:.975}50%{opacity:1}92%{opacity:.985}}
+
+/* ---------- generic controls ---------- */
+.btn{background:rgba(var(--acc-rgb),.05);border:1px solid var(--border);color:var(--text);padding:7px 12px;letter-spacing:.04em;line-height:1.2;
+  transition:background-color .15s,border-color .15s,color .15s,box-shadow .15s,transform .1s;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn:hover{border-color:var(--acc);color:var(--acc);box-shadow:0 0 12px rgba(var(--acc-rgb),.25);background:rgba(var(--acc-rgb),.09)}
+.btn:active{transform:translateY(1px) scale(.98)}
+.btn:focus-visible{outline:1px solid var(--acc);outline-offset:2px}
+.btn.primary{background:var(--acc);color:var(--on-acc);border-color:var(--acc);font-weight:700}
+.btn.primary:hover{color:var(--on-acc);box-shadow:0 0 18px rgba(var(--acc-rgb),.55);background:var(--acc)}
+.btn.danger{border-color:#5a1820;color:#ff808c;background:rgba(255,51,68,.05)}
+.btn.danger:hover{border-color:var(--err);color:#ffb3ba;background:rgba(255,51,68,.12);box-shadow:0 0 12px rgba(255,51,68,.25)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn svg{width:15px;height:15px}
+.inp{background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 10px;outline:none;width:100%;transition:border-color .15s,box-shadow .15s;border-radius:0}
+.inp:focus{border-color:var(--acc);box-shadow:0 0 0 1px rgba(var(--acc-rgb),.25),0 0 14px rgba(var(--acc-rgb),.15)}
+textarea.inp{resize:vertical;min-height:80px;line-height:1.5}
+.lbl{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 5px}
+.msg{min-height:18px;font-size:12.5px}
+.msg.err{color:var(--err)}
+.msg.ok{color:var(--ok)}
+.msg.warn{color:var(--warn)}
+.badge{display:inline-block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border:1px solid var(--border);background:var(--forest);color:var(--acc)}
+.badge.ok{background:rgba(var(--acc-rgb),.12);border-color:rgba(var(--acc-rgb),.5)}
+.badge.dim{color:var(--muted)}
+.note{border-left:2px solid var(--warn);background:rgba(255,184,0,.05);padding:8px 10px;font-size:12px;color:#e9dcb4;line-height:1.5}
+.note.g{border-left-color:var(--acc);background:rgba(var(--acc-rgb),.04);color:var(--text2)}
+.empty{color:var(--muted);padding:18px;text-align:center;border:1px dashed var(--border)}
+
+/* ---------- screens ---------- */
+.screen{position:fixed;inset:0;display:none}
+.screen.active{display:block;animation:screenIn .4s ease-out}
+@keyframes screenIn{from{opacity:0;filter:brightness(1.8)}to{opacity:1;filter:none}}
+
+/* ---------- glitch ---------- */
+.glitchable{position:relative}
+.glitchable.glitch::before,.glitchable.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+.glitchable.glitch::before{color:#ff3344;transform:translate(-3px,0);clip-path:inset(10% 0 55% 0);opacity:.7;animation:gl1 .35s steps(2) infinite}
+.glitchable.glitch::after{color:#b6ff00;transform:translate(3px,0);clip-path:inset(55% 0 8% 0);opacity:.7;animation:gl2 .35s steps(2) infinite}
+@keyframes gl1{0%{clip-path:inset(10% 0 60% 0)}50%{clip-path:inset(40% 0 30% 0)}100%{clip-path:inset(70% 0 5% 0)}}
+@keyframes gl2{0%{clip-path:inset(60% 0 10% 0)}50%{clip-path:inset(20% 0 60% 0)}100%{clip-path:inset(5% 0 75% 0)}}
+.jitter{animation:jit .3s steps(3)}
+@keyframes jit{0%{transform:translate(0)}33%{transform:translate(-2px,1px)}66%{transform:translate(2px,-1px)}100%{transform:translate(0)}}
+
+/* ---------- boot ---------- */
+#boot{background:#020403;z-index:50}
+.boot-wrap{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:6vh 8vw;max-width:1100px}
+.boot-logo{font-size:clamp(42px,9vw,104px);font-weight:900;color:var(--acc);letter-spacing:.06em;margin:0;line-height:1}
+.boot-sub{margin-top:10px;font-size:clamp(14px,1.8vw,19px);color:var(--text2);letter-spacing:.3em}
+.boot-ver{margin-top:4px;color:var(--muted);font-size:12px;letter-spacing:.2em}
+.boot-bar{margin-top:34px;height:14px;border:1px solid var(--border);background:#030805;position:relative;overflow:hidden;max-width:620px}
+#boot-bar-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:repeating-linear-gradient(90deg,var(--acc) 0 10px,rgba(var(--acc-rgb),.7) 10px 12px);box-shadow:0 0 14px rgba(var(--acc-rgb),.6);transition:width .12s linear}
+.boot-row{display:flex;justify-content:space-between;max-width:620px;margin-top:8px;font-size:12.5px}
+#boot-status{color:var(--text2);letter-spacing:.08em;display:inline-block}
+#boot-status::before{content:"> ";color:var(--acc)}
+#boot-pct{color:var(--acc)}
+.boot-log{margin-top:22px;height:30vh;max-width:760px;overflow:hidden;font-size:12.5px;line-height:1.55;color:var(--muted);
+  -webkit-mask-image:linear-gradient(to bottom,transparent,#000 30%);mask-image:linear-gradient(to bottom,transparent,#000 30%);display:flex;flex-direction:column;justify-content:flex-end}
+.boot-log .ln{white-space:pre-wrap;animation:lnIn .18s ease-out}
+.boot-log .ln b{color:var(--acc);font-weight:400}
+@keyframes lnIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.boot-corner{position:absolute;right:18px;bottom:14px;font-size:11px;color:var(--muted);letter-spacing:.14em;text-align:right}
+.boot-corner .dot{display:inline-block;width:7px;height:7px;background:var(--acc);margin-right:6px;box-shadow:0 0 8px var(--acc);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.boot-error{margin-top:20px;max-width:620px;border:1px solid var(--err);background:rgba(255,51,68,.07);padding:14px}
+.boot-error .t{color:var(--err);font-weight:700;letter-spacing:.1em;margin-bottom:6px}
+.boot-error .m{color:#ffc2c8;font-size:12.5px;margin-bottom:12px;word-break:break-word}
+
+/* ---------- auth ---------- */
+#auth{background:radial-gradient(ellipse at 30% 20%,rgba(var(--acc-rgb),.08),transparent 55%),var(--bg);z-index:40;overflow:auto}
+#auth .grid-static{position:absolute;inset:0;background-image:linear-gradient(rgba(var(--acc-rgb),.05) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--acc-rgb),.05) 1px,transparent 1px);background-size:36px 36px;-webkit-mask-image:radial-gradient(ellipse at 35% 45%,#000 20%,transparent 75%);mask-image:radial-gradient(ellipse at 35% 45%,#000 20%,transparent 75%);pointer-events:none}
+.auth-layout{position:relative;min-height:100%;display:flex;align-items:center;padding:5vh 7vw;gap:6vw}
+.auth-side{flex:1;max-width:440px}
+.auth-side .big{font-size:clamp(38px,6vw,72px);font-weight:900;color:var(--acc);line-height:.95;letter-spacing:.04em}
+.auth-side p{color:var(--muted);line-height:1.6;font-size:13px}
+.auth-card{width:100%;max-width:420px;background:var(--panel);border:1px solid var(--border);padding:26px 26px 20px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 30px rgba(var(--acc-rgb),.06)}
+.auth-card::before{content:"";position:absolute;left:-1px;top:-1px;width:26px;height:26px;border-left:2px solid var(--acc);border-top:2px solid var(--acc)}
+.auth-card::after{content:"";position:absolute;right:-1px;bottom:-1px;width:26px;height:26px;border-right:2px solid var(--acc);border-bottom:2px solid var(--acc)}
+.auth-mode{font-size:12px;letter-spacing:.2em;color:var(--acc);margin-bottom:18px}
+.auth-card .field{margin-bottom:14px}
+.auth-actions{display:flex;gap:10px;margin-top:8px}
+.auth-actions .btn{flex:1;padding:10px 12px}
+.auth-warn{margin-top:18px}
+
+/* ---------- desktop ---------- */
+#desktop{background:radial-gradient(ellipse at 75% 25%,rgba(var(--acc-rgb),.07),transparent 55%),radial-gradient(ellipse at 10% 90%,rgba(10,41,18,.6),transparent 50%),var(--bg);overflow:hidden;user-select:none}
+.grid-bg{position:absolute;inset:-48px;pointer-events:none;
+  background-image:linear-gradient(rgba(var(--acc-rgb),.065) 1px,transparent 1px),linear-gradient(90deg,rgba(var(--acc-rgb),.065) 1px,transparent 1px);
+  background-size:48px 48px;animation:gridDrift 7s linear infinite;
+  -webkit-mask-image:radial-gradient(ellipse at 60% 40%,#000 25%,transparent 80%);mask-image:radial-gradient(ellipse at 60% 40%,#000 25%,transparent 80%)}
+body.no-grid .grid-bg{display:none}
+@keyframes gridDrift{from{transform:translate(0,0)}to{transform:translate(48px,48px)}}
+.wordmark{position:absolute;right:4vw;bottom:calc(var(--tb) + 5vh);text-align:right;pointer-events:none}
+.wordmark .wm{font-size:clamp(48px,10vw,150px);font-weight:900;letter-spacing:.05em;color:rgba(var(--acc-rgb),.05);-webkit-text-stroke:1px rgba(var(--acc-rgb),.16);line-height:.9}
+.wordmark .wms{font-size:12px;letter-spacing:.35em;color:rgba(var(--acc-rgb),.35);margin-top:8px}
+#desk-icons{position:absolute;top:14px;left:12px;bottom:calc(var(--tb) + 12px);display:grid;grid-auto-flow:column;grid-template-rows:repeat(auto-fill,98px);grid-auto-columns:92px;gap:4px;z-index:5}
+.dicon{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 4px;border:1px solid transparent;background:none;color:var(--text);text-align:center;font-size:11.5px;line-height:1.2;transition:background-color .15s,border-color .15s}
+.dicon .ic{width:46px;height:46px;display:grid;place-items:center;border:1px solid var(--border);background:rgba(10,41,18,.6);color:var(--acc);transition:box-shadow .2s,transform .2s,border-color .2s}
+.dicon .ic svg{width:24px;height:24px;filter:drop-shadow(0 0 4px rgba(var(--acc-rgb),.5))}
+.dicon:hover .ic{box-shadow:0 0 14px rgba(var(--acc-rgb),.35);transform:translateY(-2px);border-color:rgba(var(--acc-rgb),.5)}
+.dicon.sel{background:rgba(var(--acc-rgb),.1);border-color:rgba(var(--acc-rgb),.55)}
+.dicon.sel .lb{color:var(--acc)}
+.dicon:focus-visible{outline:1px dashed var(--acc)}
+#sys-widget{position:absolute;top:14px;right:14px;width:260px;z-index:6;background:rgba(5,10,7,.82);border:1px solid var(--border);padding:12px 14px;backdrop-filter:blur(6px)}
+#sys-widget .wt{font-size:30px;color:var(--acc);font-weight:700;letter-spacing:.04em}
+#sys-widget .wd{color:var(--text2);font-size:12px;margin-bottom:10px}
+#sys-widget .kv{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;border-top:1px dashed rgba(22,64,36,.7)}
+#sys-widget .kv span:first-child{color:var(--muted);letter-spacing:.08em}
+#sys-widget .kv span:last-child{color:var(--text2);text-align:right;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sys-widget .wh{font-size:10.5px;letter-spacing:.22em;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between}
+#win-layer{position:absolute;left:0;right:0;top:0;bottom:var(--tb);z-index:10;pointer-events:none;overflow:hidden}
+
+/* ---------- taskbar ---------- */
+#taskbar{position:absolute;left:0;right:0;bottom:0;height:var(--tb);z-index:40;display:flex;align-items:stretch;gap:4px;padding:4px 6px;
+  background:rgba(4,9,6,.96);border-top:1px solid var(--border);backdrop-filter:blur(10px);box-shadow:0 -6px 24px rgba(0,0,0,.6)}
+.tb-btn{display:flex;align-items:center;gap:7px;padding:0 11px;border:1px solid transparent;background:none;color:var(--text2);font-size:12.5px;transition:background-color .15s,border-color .15s,color .15s}
+.tb-btn svg{width:17px;height:17px;color:var(--acc)}
+.tb-btn:hover{background:rgba(var(--acc-rgb),.08);border-color:var(--border);color:var(--acc)}
+#start-btn{background:rgba(var(--acc-rgb),.1);border-color:rgba(var(--acc-rgb),.4);color:var(--acc);font-weight:700;letter-spacing:.14em}
+#start-btn.on{background:var(--acc);color:var(--on-acc)}
+#start-btn.on svg{color:var(--on-acc)}
+.tb-div{width:1px;background:var(--border);margin:4px 3px}
+#tasks{flex:1;display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;min-width:0}
+#tasks::-webkit-scrollbar{height:3px}
+.task{position:relative;max-width:180px;min-width:44px;flex-shrink:0;background:rgba(10,41,18,.45);border:1px solid var(--border)}
+.task .tl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task::after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:2px;background:var(--muted);transition:background-color .15s,left .15s,right .15s}
+.task.active{border-color:rgba(var(--acc-rgb),.6);color:var(--acc);background:rgba(var(--acc-rgb),.12)}
+.task.active::after{background:var(--acc);left:2px;right:2px;box-shadow:0 0 8px var(--acc)}
+.task.min{opacity:.6}
+#tray{display:flex;align-items:center;gap:4px}
+#tb-clock{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:0 10px;font-size:12px;line-height:1.25;border-left:1px solid var(--border)}
+#tb-clock .t{color:var(--acc)}
+#tb-clock .d{color:var(--muted);font-size:11px}
+.status-dot{width:8px;height:8px;background:var(--acc);box-shadow:0 0 8px var(--acc);display:inline-block}
+.status-dot.warn{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+
+/* ---------- start menu ---------- */
+#start-menu{position:absolute;left:6px;bottom:calc(var(--tb) + 6px);width:320px;max-width:calc(100vw - 12px);max-height:calc(100% - var(--tb) - 16px);z-index:30;display:flex;flex-direction:column;
+  background:rgba(5,10,7,.97);border:1px solid rgba(var(--acc-rgb),.45);box-shadow:0 18px 50px rgba(0,0,0,.8),0 0 24px rgba(var(--acc-rgb),.12);animation:menuIn .16s ease-out;transform-origin:bottom left}
+@keyframes menuIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.sm-head{display:flex;gap:12px;align-items:center;padding:14px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,rgba(var(--acc-rgb),.1),transparent)}
+.sm-head svg{width:34px;height:34px;color:var(--acc)}
+.sm-title{font-weight:900;font-size:17px;letter-spacing:.12em;color:var(--acc)}
+.sm-label{font-size:10.5px;letter-spacing:.22em;color:var(--muted);padding:10px 14px 4px}
+.sm-apps{overflow:auto;padding:0 6px 6px;flex:1}
+.sm-item{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;background:none;border:1px solid transparent;color:var(--text);text-align:left;transition:background-color .12s,border-color .12s,padding-left .15s}
+.sm-item svg{width:18px;height:18px;color:var(--acc);flex-shrink:0}
+.sm-item:hover{background:rgba(var(--acc-rgb),.08);border-color:var(--border);padding-left:14px;color:var(--acc)}
+.sm-item .c{margin-left:auto;font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.sm-foot{display:flex;flex-direction:column;border-top:1px solid var(--border);padding:6px}
+.sm-item.danger svg{color:var(--err)}
+.sm-item.danger:hover{color:#ff808c;background:rgba(255,51,68,.08);border-color:#5a1820}
+
+/* ---------- windows ---------- */
+.win{position:absolute;display:flex;flex-direction:column;min-width:260px;min-height:170px;background:var(--panel);border:1px solid var(--border);
+  box-shadow:0 14px 44px rgba(0,0,0,.85);pointer-events:auto;overflow:hidden;resize:both;backdrop-filter:blur(8px);
+  animation:winIn .17s ease-out;transition:opacity .16s ease,transform .16s ease,border-color .2s,box-shadow .2s}
+@keyframes winIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:none}}
+.win.active{border-color:rgba(var(--acc-rgb),.65);box-shadow:0 14px 44px rgba(0,0,0,.85),0 0 20px rgba(var(--acc-rgb),.16)}
+.win.min{opacity:0;transform:scale(.85) translateY(70px);visibility:hidden;pointer-events:none;transition:opacity .16s ease,transform .18s ease-in,visibility 0s linear .18s}
+.win.max{left:0!important;top:0!important;width:100%!important;height:100%!important;resize:none}
+.win.dragging{transition:none;opacity:.94}
+.win-title{height:34px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 4px 0 10px;cursor:grab;touch-action:none;
+  background:linear-gradient(90deg,rgba(var(--acc-rgb),.07),rgba(10,41,18,.3));border-bottom:1px solid var(--border)}
+.win.active .win-title{background:linear-gradient(90deg,rgba(var(--acc-rgb),.16),rgba(10,41,18,.35))}
+.win.dragging .win-title{cursor:grabbing}
+.win-ico svg{width:16px;height:16px;color:var(--acc);display:block}
+.win-name{font-size:12.5px;letter-spacing:.1em;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+.win.active .win-name{color:var(--acc)}
+.win-meta{font-size:10.5px;color:var(--muted);letter-spacing:.1em;white-space:nowrap}
+.win-ctrls{margin-left:auto;display:flex;gap:3px}
+.wc{width:30px;height:24px;display:grid;place-items:center;background:rgba(0,0,0,.25);border:1px solid var(--border);color:var(--text2);font-size:12px;line-height:1;transition:background-color .12s,color .12s,border-color .12s}
+.wc:hover{background:rgba(var(--acc-rgb),.15);color:var(--acc);border-color:rgba(var(--acc-rgb),.5)}
+.wc.wc-close:hover{background:rgba(255,51,68,.2);color:#ff9aa3;border-color:var(--err)}
+.win-body{flex:1;overflow:auto;padding:16px;min-height:0;user-select:text}
+.win-body.nopad{padding:0;overflow:hidden;display:flex;flex-direction:column}
+
+/* ---------- toasts ---------- */
+#toasts{position:fixed;right:12px;bottom:calc(var(--tb) + 12px);z-index:99990;display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:none}
+.toast{pointer-events:auto;max-width:340px;background:rgba(4,10,6,.97);border:1px solid var(--border);border-left:3px solid var(--acc);padding:9px 12px;font-size:12.5px;color:var(--text2);box-shadow:0 8px 24px rgba(0,0,0,.7);animation:toastIn .2s ease-out;transition:opacity .25s,transform .25s}
+.toast.ok{border-left-color:var(--ok)}
+.toast.err{border-left-color:var(--err);color:#ffc2c8}
+.toast.warn{border-left-color:var(--warn)}
+.toast.out{opacity:0;transform:translateX(16px)}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+/* ---------- terminal ---------- */
+.term{flex:1;display:flex;flex-direction:column;background:#030604;min-height:0;cursor:text}
+.term-out{flex:1;overflow:auto;padding:12px 14px 4px;font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:#d4fcd6}
+.term-out .e{color:#ff3b4b}
+.term-out .o{color:var(--ok)}
+.term-out .p{color:var(--acc)}
+.term-out .m{color:var(--muted)}
+.term-line{display:flex;align-items:center;gap:8px;padding:6px 14px 12px}
+.term-prompt{color:var(--acc);font-weight:700;text-shadow:0 0 8px rgba(var(--acc-rgb),.5);white-space:nowrap}
+.term-in{flex:1;background:transparent;border:none;outline:none;color:#e6ffe6;caret-color:var(--acc);font-size:13px;padding:2px 0}
+
+/* ---------- app store ---------- */
+.store-head{display:flex;gap:14px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.store-head .inp{max-width:260px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.chip{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 12px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;transition:background-color .15s,color .15s,border-color .15s}
+.chip:hover{color:var(--acc);border-color:rgba(var(--acc-rgb),.5)}
+.chip.on{background:rgba(var(--acc-rgb),.14);color:var(--acc);border-color:var(--acc)}
+.store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px}
+.app-card{border:1px solid var(--border);background:rgba(10,41,18,.25);padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s,transform .2s,box-shadow .2s}
+.app-card:hover{border-color:rgba(var(--acc-rgb),.5);transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.5)}
+.ac-top{display:flex;gap:10px;align-items:flex-start}
+.ac-ico{width:42px;height:42px;flex-shrink:0;display:grid;place-items:center;border:1px solid var(--border);background:var(--forest);color:var(--acc)}
+.ac-ico svg{width:22px;height:22px}
+.ac-name{font-weight:700;color:var(--text);margin-bottom:4px}
+.ac-desc{margin:0;color:var(--muted);font-size:12.5px;line-height:1.5;flex:1}
+.ac-actions{display:flex;gap:6px;align-items:center}
+
+/* ---------- vault ---------- */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:14px;gap:2px;flex-wrap:wrap}
+.tab{background:none;border:1px solid transparent;border-bottom:none;color:var(--muted);padding:8px 14px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;transition:color .15s,background-color .15s;margin-bottom:-1px}
+.tab:hover{color:var(--acc)}
+.tab.on{color:var(--acc);border-color:var(--border);background:var(--panel);box-shadow:inset 0 2px 0 var(--acc)}
+.vault-grid{display:grid;grid-template-columns:minmax(240px,1fr) minmax(240px,1fr);gap:14px}
+.vlist{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto}
+.vitem{border:1px solid var(--border);padding:8px 10px;background:rgba(10,41,18,.25);display:flex;gap:8px;align-items:center;transition:border-color .15s}
+.vitem:hover{border-color:rgba(var(--acc-rgb),.45)}
+.vitem.on{border-color:var(--acc)}
+.vitem .vt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vview{border:1px solid var(--border);padding:12px;background:var(--bg2);white-space:pre-wrap;word-break:break-word;min-height:80px;line-height:1.5;font-size:13px}
+.outbox{border:1px dashed var(--border);background:var(--bg2);padding:10px;min-height:44px;white-space:pre-wrap;word-break:break-all;font-size:13px;line-height:1.6}
+.zt{color:var(--on-acc);background:var(--acc);padding:0 2px;margin:0 1px;font-size:10px}
+.zt.b{background:var(--warn)}
+.zt.m{background:#ff3df0}
+.transp{border:1px dashed rgba(var(--acc-rgb),.45);padding:14px;min-height:50px;font-size:18px;color:transparent;transition:color .25s,text-shadow .25s;word-break:break-word;background:repeating-linear-gradient(45deg,rgba(var(--acc-rgb),.03) 0 8px,transparent 8px 16px)}
+.transp.revealed{color:var(--acc);text-shadow:0 0 8px rgba(var(--acc-rgb),.5)}
+
+/* ---------- code ---------- */
+.code-wrap{flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:0}
+.code-left,.code-right{display:flex;flex-direction:column;min-height:0;min-width:0}
+.code-left{border-right:1px solid var(--border)}
+.pane-bar{display:flex;align-items:center;gap:6px;padding:7px 10px;border-bottom:1px solid var(--border);background:rgba(10,41,18,.35);flex-wrap:wrap}
+.pane-bar .ttl{font-size:11px;letter-spacing:.18em;color:var(--muted);margin-right:auto}
+.code-ta{flex:1;background:#030604;border:none;outline:none;color:#cdfcd3;padding:12px;font-size:13px;line-height:1.55;resize:none;tab-size:2;white-space:pre;overflow:auto;caret-color:var(--acc)}
+.code-frame{flex:1;border:none;background:#fff;width:100%;min-height:0}
+.code-msg{padding:6px 10px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--border);line-height:1.45}
+
+/* ---------- files ---------- */
+.fm{display:grid;grid-template-columns:180px 1fr;gap:14px;min-height:100%}
+.fm-side{display:flex;flex-direction:column;gap:4px}
+.fm-nav{display:flex;align-items:center;gap:8px;background:none;border:1px solid transparent;color:var(--text2);padding:8px 10px;text-align:left;transition:background-color .15s,border-color .15s,color .15s}
+.fm-nav svg{width:16px;height:16px;color:var(--acc)}
+.fm-nav:hover{background:rgba(var(--acc-rgb),.07);border-color:var(--border)}
+.fm-nav.on{background:rgba(var(--acc-rgb),.13);border-color:rgba(var(--acc-rgb),.5);color:var(--acc)}
+.fm-path{font-size:12px;color:var(--muted);border:1px solid var(--border);padding:6px 10px;background:var(--bg2);margin-bottom:10px}
+.fm-path b{color:var(--acc);font-weight:400}
+.ftable{width:100%;border-collapse:collapse;font-size:12.5px}
+.ftable th{text-align:left;font-weight:400;color:var(--muted);font-size:11px;letter-spacing:.12em;text-transform:uppercase;border-bottom:1px solid var(--border);padding:6px 8px}
+.ftable td{padding:7px 8px;border-bottom:1px dashed rgba(22,64,36,.7)}
+.ftable tr:hover td{background:rgba(var(--acc-rgb),.04)}
+.chk{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:12.5px}
+.chk input{accent-color:var(--acc);width:15px;height:15px}
+
+/* ---------- settings ---------- */
+.set-sec{border:1px solid var(--border);padding:14px;margin-bottom:12px;background:rgba(10,41,18,.18)}
+.swatches{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sw{width:34px;height:34px;border:1px solid var(--border);padding:3px;background:none;transition:transform .15s,border-color .15s}
+.sw span{display:block;width:100%;height:100%}
+.sw:hover{transform:translateY(-2px)}
+.sw.on{border-color:#fff;box-shadow:0 0 10px rgba(255,255,255,.3)}
+.sw-custom{width:44px;height:34px;padding:0;border:1px solid var(--border);background:none}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed rgba(22,64,36,.7)}
+.toggle:last-child{border-bottom:none}
+.switch{width:46px;height:24px;border:1px solid var(--border);background:var(--bg2);position:relative;padding:0;transition:background-color .15s,border-color .15s;flex-shrink:0}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;background:var(--muted);transition:transform .18s,background-color .18s}
+.switch.on{border-color:var(--acc);background:rgba(var(--acc-rgb),.15)}
+.switch.on::after{transform:translateX(22px);background:var(--acc);box-shadow:0 0 8px var(--acc)}
+
+/* ---------- minesweeper ---------- */
+.ms{display:flex;flex-direction:column;align-items:center;gap:12px}
+.ms-bar{display:flex;gap:8px;align-items:center;justify-content:space-between;width:100%;max-width:330px}
+.ms-lcd{font-size:18px;color:var(--acc);background:#020403;border:1px solid var(--border);padding:3px 10px;min-width:62px;text-align:center;text-shadow:0 0 8px rgba(var(--acc-rgb),.6)}
+.ms-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;width:min(330px,100%);aspect-ratio:1;user-select:none}
+.mc{border:1px solid var(--border);background:linear-gradient(180deg,rgba(var(--acc-rgb),.12),rgba(10,41,18,.5));color:var(--text);font-weight:700;font-size:15px;padding:0;display:grid;place-items:center;transition:background-color .1s,border-color .1s,transform .08s}
+.mc:hover:not(.rev){border-color:var(--acc);background:rgba(var(--acc-rgb),.2)}
+.mc:active:not(.rev){transform:scale(.94)}
+.mc.rev{background:#030604;border-color:rgba(22,64,36,.6);cursor:default}
+.mc.flag{color:var(--warn)}
+.mc.boom{background:rgba(255,51,68,.45);border-color:var(--err);color:#fff}
+.mc.mine{color:var(--err)}
+.mc.wrongflag{color:var(--err);text-decoration:line-through}
+.ms-status{font-size:13px;letter-spacing:.12em;min-height:20px;text-align:center}
+
+/* ---------- clicker ---------- */
+.ck{display:grid;grid-template-columns:1fr 250px;gap:16px;min-height:100%}
+.ck-main{display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;gap:12px;min-height:300px;overflow:hidden;border:1px solid var(--border);background:radial-gradient(circle at center,rgba(var(--acc-rgb),.08),transparent 65%)}
+.ck-score{font-size:34px;color:var(--acc);font-weight:900;text-shadow:0 0 14px rgba(var(--acc-rgb),.5)}
+.cube-btn{background:none;border:none;padding:20px;outline:none}
+.cube-scene{width:130px;height:130px;perspective:620px;transition:transform .1s}
+.cube-btn:active .cube-scene{transform:scale(.92)}
+.cube-scene.pop{animation:cubePop .25s ease-out}
+@keyframes cubePop{0%{transform:scale(1)}40%{transform:scale(.86)}100%{transform:scale(1)}}
+.cube{width:100%;height:100%;position:relative;transform-style:preserve-3d;animation:cubeSpin 9s linear infinite}
+.cube .f{position:absolute;inset:0;border:2px solid var(--acc);background:rgba(var(--acc-rgb),.09);box-shadow:inset 0 0 28px rgba(var(--acc-rgb),.35),0 0 12px rgba(var(--acc-rgb),.25)}
+.cube .f1{transform:translateZ(65px)}.cube .f2{transform:rotateY(180deg) translateZ(65px)}
+.cube .f3{transform:rotateY(90deg) translateZ(65px)}.cube .f4{transform:rotateY(-90deg) translateZ(65px)}
+.cube .f5{transform:rotateX(90deg) translateZ(65px)}.cube .f6{transform:rotateX(-90deg) translateZ(65px)}
+.cube .f1::after{content:"G";position:absolute;inset:0;display:grid;place-items:center;font-size:54px;font-weight:900;color:var(--acc);text-shadow:0 0 14px var(--acc)}
+@keyframes cubeSpin{from{transform:rotateX(-22deg) rotateY(0)}to{transform:rotateX(-22deg) rotateY(360deg)}}
+.floater{position:absolute;pointer-events:none;color:var(--acc);font-weight:900;font-size:18px;text-shadow:0 0 10px var(--acc);animation:floatUp .85s ease-out forwards}
+@keyframes floatUp{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-70px)}}
+.upg{border:1px solid var(--border);padding:10px;display:flex;flex-direction:column;gap:6px;background:rgba(10,41,18,.25);transition:border-color .15s}
+.upg:hover{border-color:rgba(var(--acc-rgb),.45)}
+.upg .un{font-weight:700;color:var(--text)}
+
+/* ---------- games launcher ---------- */
+.gl{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.gcard{border:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(160deg,rgba(var(--acc-rgb),.08),transparent 60%);transition:border-color .2s,transform .2s}
+.gcard:hover{border-color:var(--acc);transform:translateY(-2px)}
+.gcard svg{width:34px;height:34px;color:var(--acc)}
+
+/* ---------- notes ---------- */
+.notes-ta{flex:1;background:#030604;border:none;outline:none;color:var(--text);padding:14px;font-size:13.5px;line-height:1.6;resize:none;caret-color:var(--acc)}
+
+/* ---------- responsive ---------- */
+@media (max-width:900px){
+  #sys-widget{width:210px}
+  .ck{grid-template-columns:1fr}
+  .vault-grid{grid-template-columns:1fr}
+}
+@media (max-width:720px){
+  #sys-widget{display:none}
+  .tb-btn .tl,.task .tl,#tb-dl .tl{display:none}
+  .task{min-width:40px;max-width:52px}
+  .code-wrap{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
+  .code-left{border-right:none;border-bottom:1px solid var(--border)}
+  .fm{grid-template-columns:1fr}
+  .fm-side{flex-direction:row;flex-wrap:wrap}
+  .auth-side{display:none}
+  .auth-layout{justify-content:center;padding:4vh 16px}
+  #tb-clock .d{display:none}
+  .win-meta{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .grid-bg,#crt,#crt::after,.cube{animation:none!important}
+}
+</style>
+</head>
+<body>
+<script>
+/* Boot watchdog: runs even if the main script fails to parse. */
+window.__GN_BOOTED=false;window.__GN_ERRORS=[];
+window.addEventListener('error',function(e){try{window.__GN_ERRORS.push(String(e&&e.message?e.message:e));}catch(_){}});
+setTimeout(function(){if(window.__GN_BOOTED)return;var b=document.getElementById('boot-error');if(!b)return;b.classList.remove('hidden');var m=document.getElementById('boot-error-msg');if(m)m.textContent='Boot watchdog: the system did not finish starting. '+(window.__GN_ERRORS.join(' | ')||'No error details available.');},10000);
+</script>
+<div id="crt"></div>
+
+<!-- ================= BOOT ================= -->
+<section id="boot" class="screen active" data-testid="boot-screen">
+  <div class="boot-wrap">
+    <h1 class="boot-logo glow glitchable" id="boot-logo" data-text="GOOFY NODE" data-testid="boot-logo">GOOFY NODE</h1>
+    <div class="boot-sub" data-testid="boot-powered-by">powered by oogy</div>
+    <div class="boot-ver">OPERATING SYSTEM // v1.0.2</div>
+    <div class="boot-bar" data-testid="boot-progress"><div id="boot-bar-fill"></div></div>
+    <div class="boot-row"><span id="boot-status" data-testid="boot-status">status:setup</span><span id="boot-pct" data-testid="boot-percent">0%</span></div>
+    <div class="boot-log" id="boot-log" data-testid="boot-log"></div>
+    <div class="boot-error hidden" id="boot-error" data-testid="boot-error">
+      <div class="t">!! BOOT FAILURE DETECTED</div>
+      <div class="m" id="boot-error-msg">Unknown error.</div>
+      <div class="row">
+        <button class="btn primary sm" data-testid="boot-recover-continue" onclick="if(window.__gnForceLogin){window.__gnForceLogin();}else{location.reload();}">Continue to login</button>
+        <button class="btn sm" data-testid="boot-recover-reload" onclick="location.reload()">Reload</button>
+        <button class="btn danger sm" data-testid="boot-recover-reset" onclick="try{Object.keys(localStorage).forEach(function(k){if(k.indexOf('gnos.')===0)localStorage.removeItem(k);});}catch(e){}location.reload();">Reset local data &amp; reload</button>
+      </div>
+    </div>
+  </div>
+  <div class="boot-corner"><span class="dot"></span>GN-BIOS 1.0.2 // NODE-0<br><span id="boot-sysinfo">mem ok / disk: browser-local</span></div>
+</section>
+
+<!-- ================= AUTH ================= -->
+<section id="auth" class="screen" data-testid="auth-screen">
+  <div class="grid-static"></div>
+  <div class="auth-layout">
+    <div class="auth-side">
+      <div class="big glow glitchable" data-text="GOOFY NODE" id="auth-logo">GOOFY<br>NODE</div>
+      <div class="upper small acc" style="margin-top:12px">powered by oogy // v1.0.2</div>
+      <p>Local node shell. Identify yourself to mount the desktop. Accounts live only inside this browser on this device.</p>
+      <p class="tiny">$ whoami<br>&gt; unknown_operator<span class="acc">_</span></p>
+    </div>
+    <div class="auth-card" data-testid="auth-card">
+      <div class="auth-mode" id="auth-mode" data-testid="auth-mode-label">// LOGIN</div>
+      <form id="auth-form" novalidate="" autocomplete="off">
+        <div class="field"><label class="lbl" for="auth-user">username</label><input class="inp" id="auth-user" data-testid="auth-username-input" maxlength="20" spellcheck="false" autocomplete="username"></div>
+        <div class="field"><label class="lbl" for="auth-pass">password</label><input class="inp" id="auth-pass" type="password" data-testid="auth-password-input" autocomplete="current-password"></div>
+        <div class="field hidden" id="auth-confirm-wrap"><label class="lbl" for="auth-confirm">confirm password</label><input class="inp" id="auth-confirm" type="password" data-testid="auth-confirm-input" autocomplete="new-password"></div>
+        <div class="msg" id="auth-msg" data-testid="auth-message" role="status"></div>
+        <div class="auth-actions">
+          <button type="button" class="btn primary" id="auth-login-btn" data-testid="auth-login-button">Login</button>
+          <button type="button" class="btn" id="auth-create-btn" data-testid="auth-create-account-button">Create Account</button>
+        </div>
+        <button type="submit" class="hidden" aria-hidden="true" tabindex="-1"></button>
+      </form>
+      <div class="note auth-warn" data-testid="auth-demo-warning">DEMO ONLY: accounts are stored in this browser's local storage with a simple non-cryptographic hash. This is <b>not</b> production-grade authentication. Never use a real password here.</div>
+      <div class="msg warn hidden" id="auth-storage-note" data-testid="auth-storage-warning" style="margin-top:10px">Browser storage is unavailable. Accounts and data will only last until this tab is closed.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DESKTOP ================= -->
+<section id="desktop" class="screen" data-testid="desktop-screen">
+  <div class="grid-bg" id="grid-bg"></div>
+  <div class="wordmark"><div class="wm glitchable" id="wordmark" data-text="GOOFY NODE">GOOFY NODE</div><div class="wms">POWERED BY OOGY // v1.0.2</div></div>
+  <div id="desk-icons" data-testid="desktop-icons"></div>
+  <aside id="sys-widget" data-testid="system-widget">
+    <div class="wh"><span>SYS.STATUS</span><span class="acc">● ONLINE</span></div>
+    <div class="wt" id="w-time" data-testid="widget-time">00:00:00</div>
+    <div class="wd" id="w-date" data-testid="widget-date">-</div>
+    <div class="kv"><span>OPERATOR</span><span id="w-user" data-testid="widget-user">-</span></div>
+    <div class="kv"><span>OS</span><span>GOOFY NODE v1.0.2</span></div>
+    <div class="kv"><span>UPTIME</span><span id="w-up">0s</span></div>
+    <div class="kv"><span>APPS</span><span id="w-apps" data-testid="widget-apps">0</span></div>
+    <div class="kv"><span>WINDOWS</span><span id="w-wins">0</span></div>
+    <div class="kv"><span>STORAGE</span><span id="w-store">-</span></div>
+  </aside>
+  <div id="win-layer" data-testid="window-layer"></div>
+  <div id="start-menu" class="hidden" data-testid="start-menu">
+    <div class="sm-head"><span id="sm-logo"></span><div><div class="sm-title glow">GOOFY NODE</div><div class="muted tiny">operator: <span id="sm-user" data-testid="start-menu-user">-</span> // v1.0.2</div></div></div>
+    <div class="sm-label">INSTALLED APPS</div>
+    <div class="sm-apps" id="sm-apps" data-testid="start-menu-apps"></div>
+    <div class="sm-foot">
+      <button class="sm-item" id="sm-settings" data-testid="start-menu-settings"></button>
+      <button class="sm-item" id="sm-download" data-testid="start-menu-download"></button>
+      <button class="sm-item danger" id="sm-signout" data-testid="start-menu-signout"></button>
+    </div>
+  </div>
+  <footer id="taskbar" data-testid="taskbar">
+    <button class="tb-btn" id="start-btn" data-testid="taskbar-start-button" title="Start"></button>
+    <button class="tb-btn" id="tb-store" data-testid="taskbar-store-shortcut" title="App Store"></button>
+    <button class="tb-btn" id="tb-term" data-testid="taskbar-terminal-shortcut" title="Terminal"></button>
+    <div class="tb-div"></div>
+    <div id="tasks" data-testid="taskbar-tasks"></div>
+    <div id="tray">
+      <button class="tb-btn" id="tb-dl" data-testid="taskbar-download-html" title="Download this OS as one HTML file"></button>
+      <span class="status-dot" id="tb-dot" title="storage status" data-testid="taskbar-status-dot"></span>
+      <div id="tb-clock" data-testid="taskbar-clock"><span class="t" id="tb-time">00:00</span><span class="d" id="tb-date">-</span></div>
+    </div>
+  </footer>
+</section>
+
+<div id="toasts" data-testid="toast-container"></div>
+
+<script>
+(function(){
+'use strict';
+/* Pristine copy of this file, captured before any DOM changes, used by "Download HTML". */
+var PRISTINE = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+var VERSION = '1.0.2';
+
+/* ===================== helpers ===================== */
+function $(s, r){ return (r || document).querySelector(s); }
+function $$(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function pad(n){ return String(n).padStart(2, '0'); }
+function fmtTime(d, sec){ return pad(d.getHours()) + ':' + pad(d.getMinutes()) + (sec ? ':' + pad(d.getSeconds()) : ''); }
+function fmtDate(d){ return d.toLocaleDateString(undefined, { weekday:'short', year:'numeric', month:'short', day:'numeric' }); }
+function stamp(){ var d = new Date(); return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()); }
+function fmtNum(n){ return Math.floor(n).toLocaleString(); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+/* ===================== storage (graceful) ===================== */
+var Store = (function(){
+  var ok = false, mem = {};
+  try { var k = '__gnos_probe'; window.localStorage.setItem(k, '1'); window.localStorage.removeItem(k); ok = true; } catch (e) { ok = false; }
+  function get(key, def){
+    try {
+      var raw = ok ? window.localStorage.getItem('gnos.' + key) : (Object.prototype.hasOwnProperty.call(mem, key) ? mem[key] : null);
+      if (raw == null) return def;
+      return JSON.parse(raw);
+    } catch (e) { return def; }
+  }
+  function set(key, val){
+    var s;
+    try { s = JSON.stringify(val); } catch (e) { return false; }
+    if (ok) {
+      try { window.localStorage.setItem('gnos.' + key, s); return true; }
+      catch (e) { mem[key] = s; return false; }
+    }
+    mem[key] = s; return false;
+  }
+  function del(key){ try { if (ok) window.localStorage.removeItem('gnos.' + key); } catch (e) {} delete mem[key]; }
+  return { ok: function(){ return ok; }, get: get, set: set, del: del };
+})();
+
+var USER = null, LOGIN_AT = 0;
+function ukey(k){ return 'u.' + USER + '.' + k; }
+function uget(k, d){ return Store.get(ukey(k), d); }
+function uset(k, v){ return Store.set(ukey(k), v); }
+
+/* ===================== toasts / downloads / clipboard ===================== */
+function toast(msg, type){
+  try {
+    var t = document.createElement('div');
+    t.className = 'toast ' + (type || '');
+    t.setAttribute('data-testid', 'toast');
+    t.textContent = msg;
+    $('#toasts').appendChild(t);
+    setTimeout(function(){ t.classList.add('out'); setTimeout(function(){ t.remove(); }, 300); }, 3000);
+  } catch (e) {}
+}
+function downloadText(content, filename, mime){
+  try {
+    var blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ a.remove(); URL.revokeObjectURL(url); }, 4000);
+    toast('Download triggered: ' + filename, 'ok');
+    return true;
+  } catch (e) {
+    toast('Download failed: ' + e.message, 'err');
+    return false;
+  }
+}
+function downloadSelf(){ downloadText(PRISTINE, 'goofy-node-os.html', 'text/html;charset=utf-8'); }
+function copyText(text){
+  return new Promise(function(resolve){
+    function fallback(){
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.left = '-9999px';
+        document.body.appendChild(ta); ta.select();
+        var ok = document.execCommand('copy'); ta.remove(); resolve(!!ok);
+      } catch (e) { resolve(false); }
+    }
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function(){ resolve(true); }, fallback);
+      } else fallback();
+    } catch (e) { fallback(); }
+  });
+}
+function copyReport(text, label){
+  if (!text) { toast('Nothing to copy yet.', 'warn'); return; }
+  copyText(text).then(function(ok){ toast(ok ? label + ' copied to clipboard.' : 'Copy failed: your browser blocked clipboard access. Select the text and copy manually.', ok ? 'ok' : 'err'); });
+}
+
+/* ===================== icons ===================== */
+var ICONS = {
+  terminal:'<rect x="3" y="4" width="18" height="16" rx="1"/><path d="M7 9l3 3-3 3M12.5 15h4.5"/>',
+  files:'<path d="M3 6h7l2 2h9v11H3z"/><path d="M3 10h18"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+  store:'<path d="M4 8h16l-1.2 12H5.2z"/><path d="M9 8V6a3 3 0 016 0v2"/>',
+  vault:'<rect x="4" y="10" width="16" height="11" rx="1"/><path d="M8 10V7a4 4 0 018 0v3"/><circle cx="12" cy="15.5" r="1.6"/>',
+  code:'<path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/>',
+  notes:'<path d="M5 3h10l4 4v14H5z"/><path d="M15 3v4h4M8 12h8M8 16h6"/>',
+  mines:'<circle cx="11" cy="13" r="6"/><path d="M15.5 8.5l2-2M17 4v2M19 6h2M8.5 11.5l1.5 1.5"/>',
+  clicker:'<path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12v10M12 12L3 7"/>',
+  games:'<rect x="2" y="7" width="20" height="11" rx="4"/><path d="M7 10.5v4M5 12.5h4M15 12h.01M18 14h.01"/>',
+  node:'<path d="M12 2l9 5v10l-9 5-9-5V7z"/><circle cx="12" cy="12" r="3"/>',
+  download:'<path d="M12 3v12M7 10l5 5 5-5M4 20h16"/>',
+  logout:'<path d="M10 4H4v16h6M15 8l4 4-4 4M19 12H9"/>'
+};
+function svg(name){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || ICONS.node) + '</svg>'; }
+
+/* ===================== app registry ===================== */
+var APPS = {
+  terminal:{ name:'Terminal', icon:'terminal', cat:'System', system:true, w:660, h:420, desc:'Simulated GOOFY NODE shell with the node> prompt. Lists tools, opens apps, shows system info.', render: renderTerminal },
+  files:{ name:'File Manager', icon:'files', cat:'System', system:true, w:760, h:480, desc:'Browse the OS demo data (vault entries, notes, saves) and export it to a real downloadable file.', render: renderFiles },
+  settings:{ name:'Settings', icon:'settings', cat:'System', system:true, w:580, h:560, desc:'Accent color, scanlines, desktop grid, app list reset and sign out.', render: renderSettings },
+  store:{ name:'App Store', icon:'store', cat:'System', system:true, w:800, h:560, desc:'Install, open and remove GOOFY NODE apps.', render: renderStore },
+  vault:{ name:'GOOFY VAULT', icon:'vault', cat:'Tools', w:800, h:580, desc:'For the things you hide in transparent letters that are small.', render: renderVault },
+  code:{ name:'GoofyCode', icon:'code', cat:'Tools', w:1000, h:600, desc:'HTML, CSS and JavaScript editor with a live sandboxed preview and open-in-new-tab.', render: renderCode },
+  notes:{ name:'Notes', icon:'notes', cat:'Tools', w:580, h:460, desc:'A plain local notepad. Save to browser storage or download as a TXT file.', render: renderNotes },
+  minesweeper:{ name:'Minesweeper', icon:'mines', cat:'Games', w:400, h:540, desc:'Classic 8 x 8 board with 10 mines. Left-click to reveal, right-click to flag.', render: renderMines },
+  clicker:{ name:'Goofy Clicker', icon:'clicker', cat:'Games', w:700, h:540, desc:'Click the glowing node cube to mine credits and buy upgrades.', render: renderClicker },
+  games:{ name:'Games', icon:'games', cat:'Games', w:540, h:380, desc:'Games launcher. Starts Minesweeper and Goofy Clicker.', render: renderGames }
+};
+var APP_ORDER = Object.keys(APPS);
+var DEFAULT_INSTALLED = ['terminal', 'files', 'settings', 'store'];
+
+function getInstalled(){
+  var list = uget('installed', null);
+  if (!Array.isArray(list)) list = DEFAULT_INSTALLED.slice();
+  var set = {};
+  list.forEach(function(id){ if (APPS[id]) set[id] = true; });
+  APP_ORDER.forEach(function(id){ if (APPS[id].system) set[id] = true; });
+  return APP_ORDER.filter(function(id){ return set[id]; });
+}
+function isInstalled(id){ return getInstalled().indexOf(id) !== -1; }
+function saveInstalled(list){ return uset('installed', list); }
+function appsChanged(){ renderDesktopIcons(); renderStartMenu(); WM.refreshAll(); updateWidget(); }
+function installApp(id){
+  if (!APPS[id]) return false;
+  var list = getInstalled();
+  if (list.indexOf(id) === -1) list.push(id);
+  var persisted = saveInstalled(list);
+  appsChanged();
+  toast(APPS[id].name + ' installed' + (persisted ? '.' : ' (session only: storage unavailable).'), persisted ? 'ok' : 'warn');
+  return true;
+}
+function uninstallApp(id){
+  if (!APPS[id] || APPS[id].system) return false;
+  WM.close(id);
+  var list = getInstalled().filter(function(x){ return x !== id; });
+  saveInstalled(list);
+  appsChanged();
+  toast(APPS[id].name + ' uninstalled.', 'ok');
+  return true;
+}
+function resolveApp(q){
+  q = String(q || '').toLowerCase().trim();
+  if (!q) return null;
+  var flat = q.replace(/[\s_-]+/g, '');
+  for (var i = 0; i < APP_ORDER.length; i++) {
+    var id = APP_ORDER[i], n = APPS[id].name.toLowerCase();
+    if (q === id || q === n || flat === n.replace(/[\s_-]+/g, '') ) return id;
+  }
+  var alias = { term:'terminal', shell:'terminal', file:'files', filemanager:'files', explorer:'files', appstore:'store', goofyvault:'vault', editor:'code', goofycode:'code', mine:'minesweeper', mines:'minesweeper', goofyclicker:'clicker', launcher:'games', note:'notes' };
+  return alias[flat] || null;
+}
+
+/* ===================== settings ===================== */
+var DEFAULT_SETTINGS = { accent:'#00ff66', scan:true, grid:true };
+function getSettings(){ var s = USER ? uget('settings', null) : null; s = s && typeof s === 'object' ? s : {}; return { accent: /^#[0-9a-f]{6}$/i.test(s.accent || '') ? s.accent : DEFAULT_SETTINGS.accent, scan: s.scan !== false, grid: s.grid !== false }; }
+function hexRgb(h){ var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function applySettings(s){
+  var root = document.documentElement, rgb = hexRgb(s.accent);
+  root.style.setProperty('--acc', s.accent);
+  root.style.setProperty('--acc-rgb', rgb.join(','));
+  var lum = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]);
+  root.style.setProperty('--on-acc', lum > 140 ? '#021206' : '#f2fff4');
+  document.body.classList.toggle('no-scan', !s.scan);
+  document.body.classList.toggle('no-grid', !s.grid);
+}
+function saveSettings(s){ var ok = uset('settings', s); applySettings(s); return ok; }
+
+/* ===================== screens ===================== */
+function showScreen(id){
+  $$('.screen').forEach(function(s){ s.classList.toggle('active', s.id === id); });
+}
+
+/* ===================== BOOT ===================== */
+var BOOT_STEPS = [
+  [0, 'status:setup', ['GN-BIOS v' + VERSION + ' power-on self test ... <b>ok</b>', 'cpu0: goofy-core x64 @ 4.20 GHz', 'memory check ......... <b>ok</b>']],
+  [15, 'mounting local desktop', ['mount /dev/browser0 -> /home ... <b>ok</b>', 'storage driver: ' + (Store.ok() ? 'localStorage <b>ok</b>' : 'memory-only (localStorage unavailable)')]],
+  [30, 'setting up guider', ['guider: indexing shortcuts', 'guider: binding taskbar + start menu ... <b>ok</b>']],
+  [46, 'loading app registry', ['registry: ' + APP_ORDER.length + ' packages found', 'registry: vault / goofycode / notes / games ... <b>ok</b>']],
+  [62, 'initializing scanline renderer', ['crt: phosphor P1 green', 'crt: scanline overlay + grid compositor ... <b>ok</b>']],
+  [80, 'starting GOOFY NODE shell', ['shell: node> prompt online', 'window manager: z-order stack ready']],
+  [96, 'system ready', ['all systems nominal. powered by oogy.', 'handing off to login ...']]
+];
+var booted = false;
+function bootLog(html){
+  var log = $('#boot-log'); if (!log) return;
+  var ln = document.createElement('div'); ln.className = 'ln';
+  ln.innerHTML = '<span class="acc">[' + (performance.now() / 1000).toFixed(3).padStart(8, ' ') + ']</span> ' + html;
+  log.appendChild(ln);
+  while (log.children.length > 40) log.removeChild(log.firstChild);
+}
+function bootFail(err){
+  var box = $('#boot-error'), m = $('#boot-error-msg');
+  if (m) m.textContent = 'Initialization error: ' + (err && err.message ? err.message : String(err)) + '. Use a recovery option below.';
+  if (box) box.classList.remove('hidden');
+}
+function finishBoot(){
+  if (booted) return;
+  booted = true; window.__GN_BOOTED = true;
+  try { initAuthScreen(); } catch (e) { console.warn(e); }
+  showScreen('auth');
+  setTimeout(function(){ var u = $('#auth-user'); if (u) u.focus(); }, 60);
+}
+window.__gnForceLogin = finishBoot;
+function runBoot(){
+  var dur = 3900, t0 = Date.now(), idx = -1;
+  var fill = $('#boot-bar-fill'), pctEl = $('#boot-pct'), st = $('#boot-status');
+  var iv = setInterval(function(){
+    try {
+      var p = Math.min(1, (Date.now() - t0) / dur), pct = Math.floor(p * 100);
+      fill.style.width = pct + '%'; pctEl.textContent = pct + '%';
+      while (idx + 1 < BOOT_STEPS.length && pct >= BOOT_STEPS[idx + 1][0]) {
+        idx++;
+        var step = BOOT_STEPS[idx];
+        st.textContent = step[1];
+        st.classList.remove('jitter'); void st.offsetWidth; st.classList.add('jitter');
+        step[2].forEach(function(l, i){ setTimeout(function(){ bootLog(l); }, i * 110); });
+        if (idx === 3) glitchOnce($('#boot-logo'));
+      }
+      if (p >= 1) { clearInterval(iv); setTimeout(finishBoot, 500); }
+    } catch (e) { clearInterval(iv); bootFail(e); }
+  }, 60);
+  setTimeout(function(){ if (!booted) { bootLog('<span style="color:#ff3344">watchdog: boot exceeded 9s, forcing login</span>'); finishBoot(); } }, 9000);
+}
+function glitchOnce(el){ if (!el) return; el.classList.add('glitch'); setTimeout(function(){ el.classList.remove('glitch'); }, 380); }
+
+/* ===================== AUTH ===================== */
+var authMode = 'login', authReady = false;
+function hashPw(pw, salt){
+  var s = salt + ':' + pw + ':goofy-node', h1 = 0xdeadbeef ^ s.length, h2 = 0x41c6ce57;
+  for (var r = 0; r < 600; r++) {
+    for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909) ^ r;
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  }
+  return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0');
+}
+function getUsers(){ var u = Store.get('users', {}); return u && typeof u === 'object' ? u : {}; }
+function authMsg(text, type){ var m = $('#auth-msg'); m.textContent = text || ''; m.className = 'msg ' + (type || ''); }
+function setAuthMode(m){
+  authMode = m;
+  $('#auth-confirm-wrap').classList.toggle('hidden', m !== 'create');
+  $('#auth-mode').textContent = m === 'create' ? '// CREATE ACCOUNT' : '// LOGIN';
+  $('#auth-login-btn').classList.toggle('primary', m === 'login');
+  $('#auth-create-btn').classList.toggle('primary', m === 'create');
+  $('#auth-login-btn').textContent = m === 'login' ? 'Login' : 'Back to Login';
+  $('#auth-pass').setAttribute('autocomplete', m === 'create' ? 'new-password' : 'current-password');
+  authMsg('');
+}
+function resetAuthForm(){
+  $('#auth-pass').value = ''; $('#auth-confirm').value = '';
+  setAuthMode(Object.keys(getUsers()).length ? 'login' : 'create');
+  if (authMode === 'create') authMsg('No accounts on this device yet. Create a local demo account.', 'warn');
+}
+function doCreate(){
+  var name = $('#auth-user').value.trim(), pw = $('#auth-pass').value, cf = $('#auth-confirm').value;
+  if (!name || !pw) return authMsg('Enter a username and a password.', 'err');
+  if (!/^[A-Za-z0-9_.-]{3,20}$/.test(name)) return authMsg('Username: 3-20 chars, letters, numbers, _ . - only.', 'err');
+  if (pw.length < 4) return authMsg('Password must be at least 4 characters.', 'err');
+  if (!cf) return authMsg('Confirm your password.', 'err');
+  if (pw !== cf) return authMsg('Passwords do not match.', 'err');
+  var users = getUsers(), key = name.toLowerCase();
+  if (users[key]) return authMsg('That username already exists on this device. Log in instead.', 'err');
+  var salt = uid();
+  users[key] = { name: name, salt: salt, hash: hashPw(pw, salt), created: new Date().toISOString() };
+  var ok = Store.set('users', users);
+  setAuthMode('login');
+  $('#auth-pass').value = ''; $('#auth-confirm').value = '';
+  authMsg('Account "' + name + '" created' + (ok ? '' : ' for this session only (storage unavailable)') + '. Log in now.', ok ? 'ok' : 'warn');
+  $('#auth-pass').focus();
+}
+function doLogin(){
+  var name = $('#auth-user').value.trim(), pw = $('#auth-pass').value;
+  if (!name || !pw) return authMsg('Enter your username and password.', 'err');
+  var u = getUsers()[name.toLowerCase()];
+  if (!u) return authMsg('Access denied: unknown user. Create an account first.', 'err');
+  if (hashPw(pw, u.salt) !== u.hash) return authMsg('Access denied: wrong password.', 'err');
+  authMsg('Access granted. Mounting desktop...', 'ok');
+  $('#auth-login-btn').disabled = true;
+  setTimeout(function(){ $('#auth-login-btn').disabled = false; enterDesktop(u.name); }, 450);
+}
+function initAuthScreen(){
+  if (!authReady) {
+    authReady = true;
+    $('#auth-form').addEventListener('submit', function(e){ e.preventDefault(); if (authMode === 'create') doCreate(); else doLogin(); });
+    $('#auth-login-btn').addEventListener('click', function(){ if (authMode === 'login') doLogin(); else setAuthMode('login'); });
+    $('#auth-create-btn').addEventListener('click', function(){ if (authMode === 'create') doCreate(); else { setAuthMode('create'); $('#auth-confirm').value = ''; } });
+    if (!Store.ok()) $('#auth-storage-note').classList.remove('hidden');
+  }
+  resetAuthForm();
+}
+
+/* ===================== DESKTOP ===================== */
+var deskReady = false, selectedIcon = null;
+function enterDesktop(name){
+  USER = name; LOGIN_AT = Date.now();
+  applySettings(getSettings());
+  if (!deskReady) initDesktop();
+  renderDesktopIcons(); renderStartMenu(); updateWidget(); WM.renderTasks();
+  $('#sm-user').textContent = USER;
+  showScreen('desktop');
+  toast('Welcome, ' + USER + '. GOOFY NODE v' + VERSION + ' online.', 'ok');
+}
+function signOut(){
+  WM.closeAll();
+  closeStart();
+  USER = null;
+  applySettings(DEFAULT_SETTINGS);
+  $('#auth-user').value = '';
+  resetAuthForm();
+  showScreen('auth');
+  authMsg('Signed out.', 'ok');
+}
+function initDesktop(){
+  deskReady = true;
+  $('#start-btn').innerHTML = svg('node') + '<span class="tl">GOOFY</span>';
+  $('#tb-store').innerHTML = svg('store') + '<span class="tl">App Store</span>';
+  $('#tb-term').innerHTML = svg('terminal') + '<span class="tl">Terminal</span>';
+  $('#tb-dl').innerHTML = svg('download') + '<span class="tl">HTML</span>';
+  $('#sm-logo').innerHTML = svg('node');
+  $('#sm-settings').innerHTML = svg('settings') + 'Settings';
+  $('#sm-download').innerHTML = svg('download') + 'Download HTML file';
+  $('#sm-signout').innerHTML = svg('logout') + 'Sign out';
+
+  $('#start-btn').addEventListener('click', function(){ toggleStart(); });
+  $('#tb-store').addEventListener('click', function(){ WM.open('store'); });
+  $('#tb-term').addEventListener('click', function(){ WM.open('terminal'); });
+  $('#tb-dl').addEventListener('click', downloadSelf);
+  $('#sm-settings').addEventListener('click', function(){ closeStart(); WM.open('settings'); });
+  $('#sm-download').addEventListener('click', function(){ closeStart(); downloadSelf(); });
+  $('#sm-signout').addEventListener('click', function(){ closeStart(); signOut(); });
+  $('#sm-apps').addEventListener('click', function(e){ var b = e.target.closest('[data-app]'); if (b) { closeStart(); WM.open(b.getAttribute('data-app')); } });
+
+  document.addEventListener('pointerdown', function(e){
+    var menu = $('#start-menu');
+    if (!menu.classList.contains('hidden') && !menu.contains(e.target) && !$('#start-btn').contains(e.target)) closeStart();
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeStart(); });
+
+  var icons = $('#desk-icons');
+  icons.addEventListener('click', function(e){ var b = e.target.closest('.dicon'); if (b) selectIcon(b.getAttribute('data-app')); });
+  icons.addEventListener('dblclick', function(e){ var b = e.target.closest('.dicon'); if (b) WM.open(b.getAttribute('data-app')); });
+  icons.addEventListener('keydown', function(e){ var b = e.target.closest('.dicon'); if (b && e.key === 'Enter') { e.preventDefault(); WM.open(b.getAttribute('data-app')); } });
+  $('#desktop').addEventListener('pointerdown', function(e){ if (e.target === $('#desktop') || e.target === $('#desk-icons') || e.target.id === 'win-layer') selectIcon(null); });
+
+  setInterval(tickClock, 1000); tickClock();
+  window.addEventListener('resize', function(){ WM.clampAll(); });
+  (function glitchLoop(){ setTimeout(function(){ if ($('#desktop').classList.contains('active')) glitchOnce($('#wordmark')); glitchLoop(); }, 9000 + Math.random() * 9000); })();
+}
+function selectIcon(id){
+  selectedIcon = id;
+  $$('.dicon').forEach(function(d){ d.classList.toggle('sel', d.getAttribute('data-app') === id); });
+}
+function renderDesktopIcons(){
+  var el = $('#desk-icons'); if (!el || !USER) return;
+  el.innerHTML = getInstalled().map(function(id){
+    var a = APPS[id];
+    return '<button class="dicon' + (selectedIcon === id ? ' sel' : '') + '" data-app="' + id + '" data-testid="desktop-icon-' + id + '" title="Double-click to open ' + esc(a.name) + '"><span class="ic">' + svg(a.icon) + '</span><span class="lb">' + esc(a.name) + '</span></button>';
+  }).join('');
+}
+function renderStartMenu(){
+  var el = $('#sm-apps'); if (!el || !USER) return;
+  el.innerHTML = getInstalled().map(function(id){
+    var a = APPS[id];
+    return '<button class="sm-item" data-app="' + id + '" data-testid="start-menu-app-' + id + '">' + svg(a.icon) + '<span>' + esc(a.name) + '</span><span class="c">' + a.cat + '</span></button>';
+  }).join('');
+}
+function toggleStart(){ if ($('#start-menu').classList.contains('hidden')) openStart(); else closeStart(); }
+function openStart(){ renderStartMenu(); $('#start-menu').classList.remove('hidden'); $('#start-btn').classList.add('on'); }
+function closeStart(){ var m = $('#start-menu'); if (m) m.classList.add('hidden'); var b = $('#start-btn'); if (b) b.classList.remove('on'); }
+function tickClock(){
+  if (!USER) return;
+  var d = new Date();
+  $('#tb-time').textContent = fmtTime(d); $('#tb-date').textContent = fmtDate(d);
+  $('#w-time').textContent = fmtTime(d, true); $('#w-date').textContent = fmtDate(d);
+  var s = Math.floor((Date.now() - LOGIN_AT) / 1000);
+  $('#w-up').textContent = (s >= 3600 ? Math.floor(s / 3600) + 'h ' : '') + (s >= 60 ? Math.floor(s / 60) % 60 + 'm ' : '') + (s % 60) + 's';
+}
+function updateWidget(){
+  if (!USER) return;
+  $('#w-user').textContent = USER;
+  $('#w-apps').textContent = getInstalled().length + ' / ' + APP_ORDER.length + ' installed';
+  $('#w-wins').textContent = WM.count() + ' open';
+  $('#w-store').textContent = Store.ok() ? 'localStorage' : 'memory only';
+  var dot = $('#tb-dot'); dot.classList.toggle('warn', !Store.ok()); dot.title = Store.ok() ? 'storage: localStorage' : 'storage unavailable: memory only';
+}
+
+/* ===================== WINDOW MANAGER ===================== */
+var WM = (function(){
+  var wins = {}, z = 10, pid = 1000, activeId = null;
+  function layer(){ return $('#win-layer'); }
+  function area(){ var l = layer(); return { w: l.clientWidth || window.innerWidth, h: l.clientHeight || (window.innerHeight - 44) }; }
+  function place(W, x, y){
+    var a = area(), w = W.el.offsetWidth;
+    x = Math.min(Math.max(x, -(w - 100)), a.w - 100);
+    y = Math.min(Math.max(y, 0), Math.max(0, a.h - 34));
+    W.el.style.left = Math.round(x) + 'px'; W.el.style.top = Math.round(y) + 'px';
+  }
+  function open(id){
+    var app = APPS[id];
+    if (!app) { toast('Unknown app: ' + id, 'err'); return false; }
+    if (!isInstalled(id)) { toast(app.name + ' is not installed. Get it from the App Store.', 'err'); return false; }
+    if (wins[id]) { restore(id); focus(id); return true; }
+    var el = document.createElement('div');
+    el.className = 'win';
+    el.setAttribute('data-app', id);
+    el.setAttribute('data-testid', 'window-' + id);
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-label', app.name);
+    el.innerHTML = '<div class="win-title" data-testid="window-' + id + '-titlebar"><span class="win-ico">' + svg(app.icon) + '</span><span class="win-name" data-testid="window-' + id + '-title">' + esc(app.name) + '</span><span class="win-meta">pid ' + (++pid) + '</span>' +
+      '<div class="win-ctrls"><button class="wc wc-min" title="Minimize" data-testid="window-' + id + '-minimize">&#8212;</button><button class="wc wc-max" title="Maximize" data-testid="window-' + id + '-maximize">&#9633;</button><button class="wc wc-close" title="Close" data-testid="window-' + id + '-close">&#10005;</button></div></div>' +
+      '<div class="win-body" data-testid="window-' + id + '-body"></div>';
+    layer().appendChild(el);
+    var W = { id: id, el: el, body: el.querySelector('.win-body'), min: false, max: false, refresh: null, cleanup: [] };
+    wins[id] = W;
+    var a = area(), n = Object.keys(wins).length - 1;
+    var w = Math.min(app.w || 640, a.w - 16), h = Math.min(app.h || 440, a.h - 16);
+    el.style.width = w + 'px'; el.style.height = h + 'px';
+    place(W, Math.max(8, Math.min(a.w - w - 8, 120 + (n % 6) * 34 + (a.w > 1200 ? 60 : 0))), Math.max(8, Math.min(a.h - h - 8, 24 + (n % 6) * 30)));
+    if (a.w < 720) setMax(W, true);
+    el.addEventListener('pointerdown', function(){ focus(id); }, true);
+    el.querySelector('.wc-min').addEventListener('click', function(e){ e.stopPropagation(); minimize(id); });
+    el.querySelector('.wc-max').addEventListener('click', function(e){ e.stopPropagation(); toggleMax(id); });
+    el.querySelector('.wc-close').addEventListener('click', function(e){ e.stopPropagation(); close(id); });
+    makeDraggable(W);
+    try { app.render(W); }
+    catch (err) { W.body.innerHTML = '<div class="msg err">App crashed while starting: ' + esc(err.message) + '</div>'; console.warn(err); }
+    focus(id);
+    updateWidget();
+    return true;
+  }
+  function makeDraggable(W){
+    var bar = W.el.querySelector('.win-title'), drag = false, sx = 0, sy = 0, ox = 0, oy = 0;
+    bar.addEventListener('pointerdown', function(e){
+      if (e.button !== 0 || e.target.closest('.wc') || W.max) return;
+      drag = true; sx = e.clientX; sy = e.clientY; ox = W.el.offsetLeft; oy = W.el.offsetTop;
+      try { bar.setPointerCapture(e.pointerId); } catch (_) {}
+      W.el.classList.add('dragging');
+      e.preventDefault();
+    });
+    bar.addEventListener('pointermove', function(e){ if (drag) place(W, ox + e.clientX - sx, oy + e.clientY - sy); });
+    function end(e){ if (!drag) return; drag = false; W.el.classList.remove('dragging'); try { bar.releasePointerCapture(e.pointerId); } catch (_) {} }
+    bar.addEventListener('pointerup', end); bar.addEventListener('pointercancel', end);
+    bar.addEventListener('dblclick', function(e){ if (!e.target.closest('.wc')) toggleMax(W.id); });
+  }
+  function focus(id){
+    var W = wins[id]; if (!W) return;
+    if (activeId !== id || W.el.style.zIndex === '') { z++; W.el.style.zIndex = z; }
+    if (z > 5000) renormalize();
+    activeId = id;
+    Object.keys(wins).forEach(function(k){ wins[k].el.classList.toggle('active', k === id && !wins[k].min); });
+    renderTasks();
+  }
+  function renormalize(){
+    var list = Object.keys(wins).map(function(k){ return wins[k]; }).sort(function(a, b){ return (+a.el.style.zIndex) - (+b.el.style.zIndex); });
+    z = 10; list.forEach(function(W){ z++; W.el.style.zIndex = z; });
+  }
+  function topVisible(except){
+    var best = null, bz = -1;
+    Object.keys(wins).forEach(function(k){ var W = wins[k]; if (k !== except && !W.min && +W.el.style.zIndex > bz) { bz = +W.el.style.zIndex; best = k; } });
+    return best;
+  }
+  function minimize(id){
+    var W = wins[id]; if (!W) return;
+    W.min = true; W.el.classList.add('min'); W.el.classList.remove('active');
+    if (activeId === id) { activeId = null; var nx = topVisible(id); if (nx) focus(nx); }
+    renderTasks();
+  }
+  function restore(id){ var W = wins[id]; if (!W || !W.min) return; W.min = false; W.el.classList.remove('min'); }
+  function setMax(W, on){
+    W.max = on; W.el.classList.toggle('max', on);
+    var b = W.el.querySelector('.wc-max'); b.innerHTML = on ? '&#10697;' : '&#9633;'; b.title = on ? 'Restore' : 'Maximize';
+    b.setAttribute('data-state', on ? 'maximized' : 'normal');
+  }
+  function toggleMax(id){ var W = wins[id]; if (!W) return; setMax(W, !W.max); if (!W.max) clamp(W); focus(id); }
+  function close(id){
+    var W = wins[id]; if (!W) return;
+    W.cleanup.forEach(function(fn){ try { fn(); } catch (e) {} });
+    W.el.remove(); delete wins[id];
+    if (activeId === id) { activeId = null; var nx = topVisible(); if (nx) focus(nx); }
+    renderTasks(); updateWidget();
+  }
+  function closeAll(){ Object.keys(wins).forEach(close); }
+  function clamp(W){
+    var a = area();
+    if (W.el.offsetWidth > a.w) W.el.style.width = Math.max(260, a.w - 8) + 'px';
+    if (W.el.offsetHeight > a.h) W.el.style.height = Math.max(170, a.h - 8) + 'px';
+    place(W, W.el.offsetLeft, W.el.offsetTop);
+  }
+  function clampAll(){ Object.keys(wins).forEach(function(k){ if (!wins[k].max) clamp(wins[k]); }); }
+  function taskClick(id){
+    var W = wins[id]; if (!W) return;
+    if (W.min) { restore(id); focus(id); }
+    else if (activeId === id) minimize(id);
+    else focus(id);
+  }
+  function renderTasks(){
+    var el = $('#tasks'); if (!el) return;
+    el.innerHTML = Object.keys(wins).map(function(k){
+      var W = wins[k], a = APPS[k];
+      return '<button class="tb-btn task' + (k === activeId && !W.min ? ' active' : '') + (W.min ? ' min' : '') + '" data-task="' + k + '" data-testid="taskbar-task-' + k + '" data-state="' + (W.min ? 'minimized' : (k === activeId ? 'active' : 'open')) + '" title="' + esc(a.name) + '">' + svg(a.icon) + '<span class="tl">' + esc(a.name) + '</span></button>';
+    }).join('');
+  }
+  function refreshAll(){ Object.keys(wins).forEach(function(k){ var W = wins[k]; if (W.refresh) { try { W.refresh(); } catch (e) { console.warn(e); } } }); }
+  return { open: open, close: close, closeAll: closeAll, focus: focus, minimize: minimize, toggleMax: toggleMax, renderTasks: renderTasks, refreshAll: refreshAll, clampAll: clampAll, taskClick: taskClick,
+    count: function(){ return Object.keys(wins).length; }, get: function(id){ return wins[id]; } };
+})();
+document.addEventListener('click', function(e){ var t = e.target.closest && e.target.closest('[data-task]'); if (t) WM.taskClick(t.getAttribute('data-task')); });
+
+/* ===================== APP: TERMINAL ===================== */
+function renderTerminal(W){
+  W.body.classList.add('nopad');
+  W.body.innerHTML = '<div class="term" data-testid="terminal"><div class="term-out" data-testid="terminal-output"></div><form class="term-line" autocomplete="off"><span class="term-prompt">node&gt;</span><input class="term-in" data-testid="terminal-input" spellcheck="false" aria-label="terminal input"></form></div>';
+  var out = $('.term-out', W.body), inp = $('.term-in', W.body), hist = [], hi = 0;
+  function print(text, cls){ var d = document.createElement('div'); if (cls) d.className = cls; d.textContent = text; out.appendChild(d); out.scrollTop = out.scrollHeight; }
+  var CMDS = {
+    help: function(){ print('available commands:\n  help          show this list\n  tools         list installed apps\n  clear         clear the terminal output\n  about         system information and version\n  date          current date and time\n  open <app>    launch an installed app (e.g. open vault)\n  logout        return to the login screen'); },
+    tools: function(){ var list = getInstalled(); print('installed apps (' + list.length + '):'); list.forEach(function(id){ print('  ' + id.padEnd(13, ' ') + APPS[id].name + '  [' + APPS[id].cat + ']'); }); var missing = APP_ORDER.length - list.length; if (missing) print(missing + ' more available in the App Store.', 'm'); },
+    clear: function(){ out.innerHTML = ''; },
+    about: function(){ print('GOOFY NODE OS v' + VERSION + '\npowered by oogy\noperator : ' + USER + '\napps     : ' + getInstalled().length + ' / ' + APP_ORDER.length + ' installed\nstorage  : ' + (Store.ok() ? 'browser localStorage (not encrypted)' : 'memory only') + '\nengine   : ' + (navigator.userAgent.indexOf('Edg/') > -1 ? 'Microsoft Edge' : navigator.userAgent.indexOf('Chrome/') > -1 ? 'Chrome' : 'browser') + '\nnote     : simulated shell. it cannot run Windows commands or touch your real OS.'); },
+    date: function(){ var d = new Date(); print(d.toString()); },
+    open: function(args){
+      var q = args.join(' ');
+      if (!q) return print('usage: open <app>   (type "tools" to see installed apps)', 'e');
+      var id = resolveApp(q);
+      if (!id) return print('open: unknown app "' + q + '". type "tools" for installed apps.', 'e');
+      if (!isInstalled(id)) return print('open: ' + APPS[id].name + ' is not installed. install it from the App Store (open store).', 'e');
+      WM.open(id); print('launched ' + APPS[id].name + '.', 'o');
+    },
+    logout: function(){ print('closing session for ' + USER + '...', 'o'); setTimeout(signOut, 450); }
+  };
+  print('GOOFY NODE shell v' + VERSION + ' // powered by oogy', 'p');
+  print('type "help" for commands.', 'm');
+  $('form', W.body).addEventListener('submit', function(e){
+    e.preventDefault();
+    var raw = inp.value; inp.value = '';
+    var line = raw.trim();
+    print('node> ' + raw, 'p');
+    if (!line) return;
+    hist.push(line); hi = hist.length;
+    var parts = line.split(/\s+/), cmd = parts[0].toLowerCase();
+    if (CMDS[cmd]) { try { CMDS[cmd](parts.slice(1)); } catch (err) { print('error: ' + err.message, 'e'); } }
+    else print('command not found: ' + parts[0] + '. type "help" for available commands.', 'e');
+  });
+  inp.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowUp' && hist.length) { hi = Math.max(0, hi - 1); inp.value = hist[hi]; e.preventDefault(); }
+    else if (e.key === 'ArrowDown' && hist.length) { hi = Math.min(hist.length, hi + 1); inp.value = hist[hi] || ''; e.preventDefault(); }
+  });
+  $('.term', W.body).addEventListener('click', function(){ if (!window.getSelection().toString()) inp.focus(); });
+  setTimeout(function(){ inp.focus(); }, 30);
+}
+
+/* ===================== APP: APP STORE ===================== */
+function renderStore(W){
+  var q = '', cat = 'All', CATS = ['All', 'System', 'Tools', 'Games'];
+  W.body.innerHTML = '<div class="store-head"><div><div class="h2 glow">GOOFY APP STORE</div><div class="muted small">package registry // GOOFY NODE OS v' + VERSION + '</div></div><input class="inp" placeholder="search apps..." data-testid="store-search-input" aria-label="search apps"></div>' +
+    '<div class="chips">' + CATS.map(function(c){ return '<button class="chip" data-cat="' + c + '" data-testid="store-filter-' + c.toLowerCase() + '">' + c + '</button>'; }).join('') + '</div>' +
+    '<div class="store-grid" data-testid="store-grid"></div>';
+  var grid = $('.store-grid', W.body);
+  function card(id){
+    var a = APPS[id], inst = isInstalled(id), act;
+    if (inst) act = '<button class="btn primary sm" data-act="open" data-id="' + id + '" data-testid="store-open-' + id + '">Open</button>' + (a.system ? '<span class="muted tiny">system app</span>' : '<button class="btn danger sm" data-act="uninstall" data-id="' + id + '" data-testid="store-uninstall-' + id + '">Uninstall</button>');
+    else act = '<button class="btn primary sm" data-act="install" data-id="' + id + '" data-testid="store-install-' + id + '">Install</button>';
+    return '<div class="app-card" data-testid="store-card-' + id + '"><div class="ac-top"><span class="ac-ico">' + svg(a.icon) + '</span><div class="grow"><div class="ac-name" data-testid="store-name-' + id + '">' + esc(a.name) + '</div><span class="badge dim" data-testid="store-category-' + id + '">' + a.cat + '</span> ' + (inst ? '<span class="badge ok">installed</span>' : '') + '</div></div>' +
+      '<p class="ac-desc" data-testid="store-desc-' + id + '">' + esc(a.desc) + '</p><div class="ac-actions">' + act + '</div></div>';
+  }
+  function draw(){
+    $$('.chip', W.body).forEach(function(c){ c.classList.toggle('on', c.getAttribute('data-cat') === cat); });
+    var list = APP_ORDER.filter(function(id){ var a = APPS[id]; return (cat === 'All' || a.cat === cat) && (!q || (a.name + ' ' + a.desc + ' ' + a.cat + ' ' + id).toLowerCase().indexOf(q) !== -1); });
+    grid.innerHTML = list.length ? list.map(card).join('') : '<div class="empty" data-testid="store-empty">no apps match "' + esc(q) + '"</div>';
+  }
+  $('input', W.body).addEventListener('input', function(e){ q = e.target.value.toLowerCase().trim(); draw(); });
+  $('.chips', W.body).addEventListener('click', function(e){ var c = e.target.closest('.chip'); if (c) { cat = c.getAttribute('data-cat'); draw(); } });
+  grid.addEventListener('click', function(e){
+    var b = e.target.closest('[data-act]'); if (!b) return;
+    var id = b.getAttribute('data-id'), act = b.getAttribute('data-act');
+    if (act === 'open') WM.open(id);
+    else if (act === 'uninstall') uninstallApp(id);
+    else if (act === 'install') { b.disabled = true; b.textContent = 'installing...'; setTimeout(function(){ installApp(id); }, 400); }
+  });
+  W.refresh = draw;
+  draw();
+}
+
+/* ===================== APP: GOOFY VAULT ===================== */
+var ZW0 = '\u200B', ZW1 = '\u200C', ZWM = '\u200D';
+function zwEncode(text){
+  var bytes = new TextEncoder().encode(text), out = ZWM;
+  for (var i = 0; i < bytes.length; i++) {
+    var bits = bytes[i].toString(2).padStart(8, '0');
+    for (var j = 0; j < 8; j++) out += bits[j] === '1' ? ZW1 : ZW0;
+  }
+  return out + ZWM;
+}
+function zwDecode(text){
+  var m = text.match(/\u200D([\u200B\u200C]+)\u200D/), seq;
+  if (m) seq = m[1]; else seq = (text.match(/[\u200B\u200C]/g) || []).join('');
+  if (!seq.length) throw new Error('No zero-width payload found in the input.');
+  if (seq.length % 8 !== 0) throw new Error('Payload is damaged (' + seq.length + ' bits, not a multiple of 8). Some invisible characters were probably stripped.');
+  var bytes = new Uint8Array(seq.length / 8);
+  for (var i = 0; i < bytes.length; i++) {
+    var v = 0;
+    for (var j = 0; j < 8; j++) v = (v << 1) | (seq[i * 8 + j] === ZW1 ? 1 : 0);
+    bytes[i] = v;
+  }
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+  catch (e) { throw new Error('Payload is not valid UTF-8. It may be corrupted or not made by GOOFY VAULT.'); }
+}
+function zwReveal(text){
+  var map = {}; map[ZW0] = '<span class="zt">0</span>'; map[ZW1] = '<span class="zt b">1</span>'; map[ZWM] = '<span class="zt m">|</span>'; map['\u2060'] = '<span class="zt m">WJ</span>'; map['\uFEFF'] = '<span class="zt m">BOM</span>';
+  return Array.from(text).map(function(ch){ return map[ch] || esc(ch); }).join('');
+}
+var SUP = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹',
+  a:'ᵃ',b:'ᵇ',c:'ᶜ',d:'ᵈ',e:'ᵉ',f:'ᶠ',g:'ᵍ',h:'ʰ',i:'ⁱ',j:'ʲ',k:'ᵏ',l:'ˡ',m:'ᵐ',n:'ⁿ',o:'ᵒ',p:'ᵖ',r:'ʳ',s:'ˢ',t:'ᵗ',u:'ᵘ',v:'ᵛ',w:'ʷ',x:'ˣ',y:'ʸ',z:'ᶻ',
+  A:'ᴬ',B:'ᴮ',C:'ᶜ',D:'ᴰ',E:'ᴱ',F:'ᶠ',G:'ᴳ',H:'ᴴ',I:'ᴵ',J:'ᴶ',K:'ᴷ',L:'ᴸ',M:'ᴹ',N:'ᴺ',O:'ᴼ',P:'ᴾ',R:'ᴿ',S:'ˢ',T:'ᵀ',U:'ᵁ',V:'ⱽ',W:'ᵂ',X:'ˣ',Y:'ʸ',Z:'ᶻ',
+  '+':'⁺','-':'⁻','=':'⁼','(':'⁽',')':'⁾'};
+function tinyConvert(text){
+  var unsupported = {}, out = Array.from(text).map(function(ch){
+    if (SUP[ch]) return SUP[ch];
+    if (/[A-Za-z0-9]/.test(ch)) unsupported[ch] = true;
+    return ch;
+  }).join('');
+  return { text: out, unsupported: Object.keys(unsupported) };
+}
+function renderVault(W){
+  var tab = 'notes', viewing = null;
+  W.body.innerHTML =
+    '<div class="row" style="justify-content:space-between;margin-bottom:10px"><div><div class="h2 glow">GOOFY VAULT</div><div class="muted small">For the things you hide in transparent letters that are small.</div></div><span class="badge">local only</span></div>' +
+    '<div class="tabs"><button class="tab" data-tab="notes" data-testid="vault-tab-notes">Hidden Notes</button><button class="tab" data-tab="invisible" data-testid="vault-tab-invisible">Invisible Text</button><button class="tab" data-tab="tiny" data-testid="vault-tab-tiny">Tiny &amp; Transparent</button></div>' +
+    /* notes */
+    '<div data-pane="notes"><div class="vault-grid"><div class="col">' +
+      '<div><label class="lbl">title</label><input class="inp" data-testid="vault-note-title-input" maxlength="80" placeholder="untitled secret"></div>' +
+      '<div><label class="lbl">body</label><textarea class="inp" rows="7" data-testid="vault-note-body-input" placeholder="write what you want to keep..."></textarea></div>' +
+      '<div class="row"><button class="btn primary" data-testid="vault-note-save-btn">Save note</button><button class="btn" data-testid="vault-export-btn">Export .txt</button></div>' +
+      '<div class="msg" data-testid="vault-note-msg"></div>' +
+      '<div class="note">Notes are kept in this browser\'s localStorage. They are <b>not encrypted</b> and never leave this device. Anyone with access to this browser profile can read them.</div>' +
+    '</div><div class="col"><div class="lbl">saved notes (<span data-testid="vault-note-count">0</span>)</div><div class="vlist" data-testid="vault-note-list"></div><div class="lbl" style="margin-top:6px">viewer</div><div class="vview" data-testid="vault-note-viewer"><span class="muted">select a note and press View.</span></div></div></div></div>' +
+    /* invisible */
+    '<div data-pane="invisible" class="hidden"><div class="col">' +
+      '<div><label class="lbl">secret message</label><textarea class="inp" rows="3" data-testid="vault-zw-input" placeholder="type a message to make invisible..."></textarea></div>' +
+      '<div><label class="lbl">cover text (optional, the visible text that will carry the secret)</label><input class="inp" data-testid="vault-zw-cover-input" placeholder="e.g. nothing to see here"></div>' +
+      '<div class="row"><button class="btn primary" data-testid="vault-zw-encode-btn">Encode</button><button class="btn" data-testid="vault-zw-decode-btn">Decode</button><button class="btn" data-testid="vault-zw-copy-btn">Copy Result</button><button class="btn" data-testid="vault-zw-reveal-btn">Reveal invisible chars</button></div>' +
+      '<div class="msg" data-testid="vault-zw-msg"></div>' +
+      '<div><label class="lbl">result</label><textarea class="inp" rows="3" data-testid="vault-zw-result" placeholder="encoded output appears here. To decode, paste encoded text into this box (or the message box) and press Decode."></textarea></div>' +
+      '<div class="hidden" data-testid="vault-zw-debug-wrap"><label class="lbl">debug view: <span class="zt">0</span>=U+200B <span class="zt b">1</span>=U+200C <span class="zt m">|</span>=U+200D marker</label><div class="outbox" data-testid="vault-zw-debug"></div></div>' +
+      '<div class="note">How it works: your text is turned into UTF-8 bits and each bit becomes a zero-width character (U+200B = 0, U+200C = 1) between U+200D markers. Decode reads them back. Many websites, chat apps and editors strip, normalize or alter invisible characters, so the hidden message may not survive being pasted elsewhere.</div>' +
+    '</div></div>' +
+    /* tiny */
+    '<div data-pane="tiny" class="hidden"><div class="col">' +
+      '<div><label class="lbl">text to shrink</label><textarea class="inp" rows="3" data-testid="vault-tiny-input" placeholder="hide this in small letters 123"></textarea></div>' +
+      '<div class="row"><button class="btn primary" data-testid="vault-tiny-convert-btn">Convert</button><button class="btn" data-testid="vault-tiny-copy-btn">Copy</button></div>' +
+      '<div class="msg" data-testid="vault-tiny-msg"></div>' +
+      '<div><label class="lbl">tiny result</label><div class="outbox" data-testid="vault-tiny-result"><span class="muted">converted text appears here.</span></div></div>' +
+      '<div><div class="row" style="justify-content:space-between"><label class="lbl" style="margin:0">transparent preview</label><button class="btn sm" data-testid="vault-tiny-reveal-btn">Reveal</button></div><div class="transp" style="margin-top:6px" data-testid="vault-tiny-transparent">&nbsp;</div></div>' +
+      '<div class="note">Unicode has no complete small alphabet. Superscript forms exist for digits, most lowercase letters and some capitals. "q" and "Q" have no superscript and stay as-is; capitals without a superscript (C, F, S, X, Y, Z) use the small lowercase form. Some fonts render a few of these characters unevenly. Transparent text is only invisible on this page (CSS); when copied it is ordinary text.</div>' +
+    '</div></div>';
+
+  /* tabs */
+  function setTab(t){ tab = t; $$('.tab', W.body).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-tab') === t); }); $$('[data-pane]', W.body).forEach(function(p){ p.classList.toggle('hidden', p.getAttribute('data-pane') !== t); }); }
+  $('.tabs', W.body).addEventListener('click', function(e){ var b = e.target.closest('.tab'); if (b) setTab(b.getAttribute('data-tab')); });
+  setTab(tab);
+
+  /* hidden notes */
+  var T = function(id){ return $('[data-testid="' + id + '"]', W.body); };
+  function getNotes(){ var v = uget('vault', []); return Array.isArray(v) ? v : []; }
+  function msg(id, text, type){ var m = T(id); m.textContent = text; m.className = 'msg ' + (type || ''); }
+  function drawNotes(){
+    var notes = getNotes();
+    T('vault-note-count').textContent = notes.length;
+    T('vault-note-list').innerHTML = notes.length ? notes.map(function(n){
+      return '<div class="vitem' + (viewing === n.id ? ' on' : '') + '" data-testid="vault-note-item"><span class="vt" title="' + esc(n.title) + '">' + esc(n.title) + '<br><span class="muted tiny">' + esc(new Date(n.created).toLocaleString()) + '</span></span><button class="btn sm" data-view="' + n.id + '" data-testid="vault-note-view-btn">View</button><button class="btn danger sm" data-del="' + n.id + '" data-testid="vault-note-delete-btn">Delete</button></div>';
+    }).join('') : '<div class="empty">vault is empty</div>';
+    var cur = notes.filter(function(n){ return n.id === viewing; })[0];
+    T('vault-note-viewer').innerHTML = cur ? '<div class="acc" style="margin-bottom:6px">' + esc(cur.title) + '</div>' + esc(cur.body) : '<span class="muted">select a note and press View.</span>';
+  }
+  T('vault-note-save-btn').addEventListener('click', function(){
+    var title = T('vault-note-title-input').value.trim(), body = T('vault-note-body-input').value;
+    if (!title && !body.trim()) return msg('vault-note-msg', 'Write a title or a body first.', 'err');
+    var notes = getNotes(), n = { id: uid(), title: title || 'untitled', body: body, created: new Date().toISOString() };
+    notes.unshift(n);
+    var ok = uset('vault', notes);
+    T('vault-note-title-input').value = ''; T('vault-note-body-input').value = '';
+    viewing = n.id; drawNotes();
+    msg('vault-note-msg', ok ? 'Note saved to browser storage.' : 'Saved for this session only: browser storage unavailable.', ok ? 'ok' : 'warn');
+  });
+  T('vault-note-list').addEventListener('click', function(e){
+    var v = e.target.closest('[data-view]'), d = e.target.closest('[data-del]');
+    if (v) { viewing = v.getAttribute('data-view'); drawNotes(); }
+    if (d) {
+      var id = d.getAttribute('data-del');
+      uset('vault', getNotes().filter(function(n){ return n.id !== id; }));
+      if (viewing === id) viewing = null;
+      drawNotes(); msg('vault-note-msg', 'Note deleted.', 'ok');
+    }
+  });
+  T('vault-export-btn').addEventListener('click', function(){
+    var notes = getNotes();
+    if (!notes.length) return msg('vault-note-msg', 'Nothing to export: the vault is empty.', 'err');
+    var txt = 'GOOFY VAULT export // GOOFY NODE OS v' + VERSION + '\noperator: ' + USER + '\nexported: ' + new Date().toString() + '\nnotes: ' + notes.length + '\n\n' +
+      notes.map(function(n, i){ return '==== [' + (i + 1) + '] ' + n.title + ' ====\n' + new Date(n.created).toString() + '\n\n' + n.body + '\n'; }).join('\n');
+    downloadText(txt, 'goofy-vault-' + USER + '-' + stamp() + '.txt');
+  });
+  drawNotes();
+  W.refresh = drawNotes;
+
+  /* invisible text */
+  T('vault-zw-encode-btn').addEventListener('click', function(){
+    var s = T('vault-zw-input').value;
+    if (!s) return msg('vault-zw-msg', 'Type a secret message first.', 'err');
+    var payload = zwEncode(s), cover = T('vault-zw-cover-input').value, res;
+    if (cover) { var chars = Array.from(cover); res = chars[0] + payload + chars.slice(1).join(''); } else res = payload;
+    T('vault-zw-result').value = res;
+    msg('vault-zw-msg', 'Encoded ' + Array.from(s).length + ' chars into ' + (Array.from(payload).length) + ' invisible characters' + (cover ? ' hidden inside the cover text.' : '. The result looks empty but is not.'), 'ok');
+    if (!T('vault-zw-debug-wrap').classList.contains('hidden')) T('vault-zw-debug').innerHTML = zwReveal(res);
+  });
+  T('vault-zw-decode-btn').addEventListener('click', function(){
+    var src = T('vault-zw-result').value || T('vault-zw-input').value;
+    try {
+      var dec = zwDecode(src);
+      T('vault-zw-input').value = dec;
+      msg('vault-zw-msg', 'Decoded hidden message: "' + dec + '"', 'ok');
+    } catch (err) { msg('vault-zw-msg', 'Decode failed: ' + err.message, 'err'); }
+  });
+  T('vault-zw-copy-btn').addEventListener('click', function(){ copyReport(T('vault-zw-result').value, 'Encoded result'); });
+  T('vault-zw-reveal-btn').addEventListener('click', function(){
+    var wrap = T('vault-zw-debug-wrap'), show = wrap.classList.contains('hidden');
+    wrap.classList.toggle('hidden', !show);
+    this.textContent = show ? 'Hide debug view' : 'Reveal invisible chars';
+    if (show) {
+      var r = T('vault-zw-result').value;
+      var n = (r.match(/[\u200B\u200C\u200D\u2060\uFEFF]/g) || []).length;
+      T('vault-zw-debug').innerHTML = r ? zwReveal(r) + '<div class="muted tiny" style="margin-top:6px">' + n + ' invisible / ' + (Array.from(r).length - n) + ' visible characters</div>' : '<span class="muted">no result yet.</span>';
+    }
+  });
+
+  /* tiny + transparent */
+  var tinyResult = '';
+  T('vault-tiny-convert-btn').addEventListener('click', function(){
+    var s = T('vault-tiny-input').value;
+    if (!s) return msg('vault-tiny-msg', 'Type some text to convert.', 'err');
+    var r = tinyConvert(s); tinyResult = r.text;
+    T('vault-tiny-result').textContent = r.text;
+    T('vault-tiny-transparent').textContent = r.text;
+    msg('vault-tiny-msg', r.unsupported.length ? 'Converted. No small form for: ' + r.unsupported.join(' ') + ' (kept as-is).' : 'Converted. Every letter and digit had a small form.', r.unsupported.length ? 'warn' : 'ok');
+  });
+  T('vault-tiny-copy-btn').addEventListener('click', function(){ copyReport(tinyResult, 'Tiny text'); });
+  T('vault-tiny-reveal-btn').addEventListener('click', function(){
+    var box = T('vault-tiny-transparent'), on = !box.classList.contains('revealed');
+    box.classList.toggle('revealed', on);
+    box.setAttribute('data-state', on ? 'revealed' : 'transparent');
+    this.textContent = on ? 'Hide' : 'Reveal';
+  });
+}
+
+/* ===================== APP: GOOFYCODE ===================== */
+var CODE_STARTER = [
+  '<!DOCTYPE html>',
+  '<html>',
+  '<head>',
+  '<style>',
+  '  body { background:#050806; color:#c8ffd0; font-family:Consolas, monospace; padding:24px; }',
+  '  h1 { color:#00ff66; text-shadow:0 0 10px #00ff66; }',
+  '  button { background:#0a2912; color:#00ff66; border:1px solid #00ff66; padding:8px 14px; cursor:pointer; font-family:inherit; }',
+  '  button:hover { background:#00ff66; color:#021206; }',
+  '</style>',
+  '</head>',
+  '<body>',
+  '  <h1>hello from GoofyCode</h1>',
+  '  <p>Edit the code on the left, then press Run Preview.</p>',
+  '  <button id="btn">ping node</button>',
+  '  <p id="out">pings: 0</p>',
+  '  <script>',
+  '    let n = 0;',
+  '    document.getElementById("btn").addEventListener("click", function () {',
+  '      n++;',
+  '      document.getElementById("out").textContent = "pings: " + n;',
+  '    });',
+  '  <\/script>',
+  '</body>',
+  '</html>'
+].join('\n');
+function renderCode(W){
+  W.body.classList.add('nopad');
+  W.body.innerHTML = '<div class="code-wrap"><div class="code-left"><div class="pane-bar"><span class="ttl">INDEX.HTML</span><button class="btn primary sm" data-testid="code-run-btn">Run Preview</button><button class="btn sm" data-testid="code-reset-btn">Reset</button></div>' +
+    '<textarea class="code-ta" spellcheck="false" data-testid="code-editor-textarea" aria-label="code editor"></textarea></div>' +
+    '<div class="code-right"><div class="pane-bar"><span class="ttl">PREVIEW</span><button class="btn sm" data-testid="code-newtab-btn">Open in New Tab</button></div>' +
+    '<iframe class="code-frame" sandbox="allow-scripts allow-modals allow-forms" title="GoofyCode preview" data-testid="code-preview-iframe"></iframe>' +
+    '<div class="code-msg" data-testid="code-message">Preview runs in a sandboxed iframe: scripts work, but the page cannot reach the OS, its storage or cookies. "Open in New Tab" uses a temporary Blob URL; popup blockers may stop it, and the tab content is lost when this OS page is closed.</div></div></div>';
+  var ta = $('.code-ta', W.body), frame = $('.code-frame', W.body), msgEl = $('.code-msg', W.body), resetArm = 0, saveT = null;
+  ta.value = uget('code', null) || CODE_STARTER;
+  function run(){ frame.srcdoc = ta.value; msgEl.innerHTML = '<span class="ok-t">Preview refreshed at ' + fmtTime(new Date(), true) + '.</span> Sandbox: scripts allowed, no access to the OS page.'; }
+  $('[data-testid="code-run-btn"]', W.body).addEventListener('click', run);
+  var resetBtn = $('[data-testid="code-reset-btn"]', W.body);
+  resetBtn.addEventListener('click', function(){
+    if (Date.now() - resetArm > 3000) { resetArm = Date.now(); resetBtn.textContent = 'Confirm reset?'; setTimeout(function(){ resetBtn.textContent = 'Reset'; }, 3000); return; }
+    resetArm = 0; resetBtn.textContent = 'Reset';
+    ta.value = CODE_STARTER; uset('code', null); run();
+  });
+  $('[data-testid="code-newtab-btn"]', W.body).addEventListener('click', function(){
+    var url;
+    try { url = URL.createObjectURL(new Blob([ta.value], { type: 'text/html' })); } catch (e) { msgEl.innerHTML = '<span class="err-t">Could not create a Blob URL: ' + esc(e.message) + '</span>'; return; }
+    var win = null;
+    try { win = window.open(url, '_blank'); } catch (e) { win = null; }
+    if (win) { msgEl.innerHTML = '<span class="ok-t">Opened in a new tab.</span>'; setTimeout(function(){ URL.revokeObjectURL(url); }, 60000); }
+    else msgEl.innerHTML = '<span class="err-t">Popup blocked by the browser.</span> Allow popups for this page, or <a href="' + url + '" target="_blank" rel="noopener" class="acc" data-testid="code-newtab-fallback-link">click here to open the preview tab</a>.';
+  });
+  ta.addEventListener('keydown', function(e){
+    if (e.key === 'Tab') { e.preventDefault(); var s = ta.selectionStart, en = ta.selectionEnd; ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(en); ta.selectionStart = ta.selectionEnd = s + 2; }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
+  });
+  ta.addEventListener('input', function(){ clearTimeout(saveT); saveT = setTimeout(function(){ uset('code', ta.value); }, 500); });
+  W.cleanup.push(function(){ clearTimeout(saveT); uset('code', ta.value); });
+  run();
+}
+
+/* ===================== APP: NOTES ===================== */
+function renderNotes(W){
+  W.body.classList.add('nopad');
+  W.body.innerHTML = '<div class="pane-bar"><span class="ttl">NOTES.TXT</span><span class="tiny muted" data-testid="notes-status"></span><button class="btn primary sm" data-testid="notes-save-btn">Save</button><button class="btn sm" data-testid="notes-download-btn">Download .txt</button></div>' +
+    '<textarea class="notes-ta" spellcheck="false" data-testid="notes-textarea" placeholder="type your notes... (Ctrl+S to save)"></textarea>';
+  var ta = $('.notes-ta', W.body), st = $('[data-testid="notes-status"]', W.body);
+  var saved = uget('notes', '');
+  ta.value = typeof saved === 'string' ? saved : '';
+  function status(t, cls){ st.textContent = t; st.className = 'tiny ' + (cls || 'muted'); }
+  status(ta.value ? 'loaded from storage' : 'empty note');
+  function save(){ var ok = uset('notes', ta.value); status(ok ? 'saved ' + fmtTime(new Date(), true) : 'storage unavailable: kept for this session only', ok ? 'ok-t' : 'warn-t'); if (ok) toast('Notes saved.', 'ok'); WM.refreshAll(); }
+  $('[data-testid="notes-save-btn"]', W.body).addEventListener('click', save);
+  $('[data-testid="notes-download-btn"]', W.body).addEventListener('click', function(){
+    if (!ta.value) { status('nothing to download: note is empty', 'err-t'); return; }
+    downloadText(ta.value, 'goofy-notes-' + USER + '-' + stamp() + '.txt');
+  });
+  ta.addEventListener('input', function(){ status('unsaved changes', 'warn-t'); });
+  ta.addEventListener('keydown', function(e){ if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) { e.preventDefault(); save(); } });
+  setTimeout(function(){ ta.focus(); }, 30);
+}
+
+/* ===================== APP: FILE MANAGER ===================== */
+function renderFiles(W){
+  var view = 'vault';
+  var NAV = [['vault', 'vault', 'Vault entries'], ['notes', 'notes', 'Notes'], ['clicker', 'clicker', 'Clicker save'], ['system', 'settings', 'System']];
+  W.body.innerHTML = '<div class="fm"><div class="fm-side">' + NAV.map(function(n){ return '<button class="fm-nav" data-view="' + n[0] + '" data-testid="files-nav-' + n[0] + '">' + svg(n[1]) + n[2] + '</button>'; }).join('') +
+    '<div class="sep"></div><div class="lbl">export data</div>' +
+    '<label class="chk"><input type="checkbox" data-exp="vault" checked data-testid="files-export-vault">vault entries</label>' +
+    '<label class="chk"><input type="checkbox" data-exp="notes" checked data-testid="files-export-notes">notes</label>' +
+    '<label class="chk"><input type="checkbox" data-exp="clicker" data-testid="files-export-clicker">clicker save</label>' +
+    '<label class="chk"><input type="checkbox" data-exp="system" data-testid="files-export-system">apps + settings</label>' +
+    '<button class="btn primary sm" style="margin-top:6px" data-testid="files-export-btn">Export data</button><div class="msg tiny" data-testid="files-export-msg"></div>' +
+    '</div><div><div class="fm-path" data-testid="files-path"></div><div data-testid="files-content"></div>' +
+    '<div class="note g" style="margin-top:14px">This File Manager only shows GOOFY NODE\'s own demo data stored in this browser. A web page cannot browse or control your Windows file system.</div></div></div>';
+  var content = $('[data-testid="files-content"]', W.body);
+  function openBtn(id, label){ return isInstalled(id) ? '<button class="btn sm" data-open="' + id + '" data-testid="files-open-' + id + '">' + label + '</button>' : '<span class="muted small">' + APPS[id].name + ' not installed (App Store)</span>'; }
+  function draw(){
+    $$('.fm-nav', W.body).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-view') === view); });
+    $('[data-testid="files-path"]', W.body).innerHTML = '/home/<b>' + esc(USER) + '</b>/' + view;
+    var h = '';
+    if (view === 'vault') {
+      var v = uget('vault', []); v = Array.isArray(v) ? v : [];
+      h = '<div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="h3" style="margin:0">vault entries (' + v.length + ')</span>' + openBtn('vault', 'Open GOOFY VAULT') + '</div>' +
+        (v.length ? '<table class="ftable"><thead><tr><th>name</th><th>created</th><th>size</th></tr></thead><tbody>' + v.map(function(n){ return '<tr data-testid="files-vault-row"><td>' + esc(n.title) + '.note</td><td>' + esc(new Date(n.created).toLocaleString()) + '</td><td>' + (n.body || '').length + ' ch</td></tr>'; }).join('') + '</tbody></table>' : '<div class="empty">no vault entries yet</div>');
+    } else if (view === 'notes') {
+      var t = uget('notes', ''); t = typeof t === 'string' ? t : '';
+      h = '<div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="h3" style="margin:0">notes.txt (' + t.length + ' chars)</span>' + openBtn('notes', 'Open Notes') + '</div>' +
+        (t ? '<div class="vview" data-testid="files-notes-preview">' + esc(t.length > 1500 ? t.slice(0, 1500) + '\n...' : t) + '</div>' : '<div class="empty">notes.txt is empty</div>');
+    } else if (view === 'clicker') {
+      var c = uget('clicker', null);
+      h = '<div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="h3" style="margin:0">clicker.sav</span>' + openBtn('clicker', 'Open Goofy Clicker') + '</div>' +
+        (c ? '<table class="ftable"><tbody><tr><td>credits</td><td>' + fmtNum(c.credits || 0) + '</td></tr><tr><td>lifetime</td><td>' + fmtNum(c.total || 0) + '</td></tr><tr><td>upgrades</td><td>' + esc(JSON.stringify(c.owned || {})) + '</td></tr></tbody></table>' : '<div class="empty">no save yet</div>');
+    } else {
+      h = '<span class="h3">installed apps</span><table class="ftable"><tbody>' + getInstalled().map(function(id){ return '<tr><td>' + id + '.app</td><td>' + esc(APPS[id].name) + '</td><td>' + APPS[id].cat + '</td></tr>'; }).join('') + '</tbody></table>' +
+        '<div class="sep"></div><span class="h3">settings.json</span><div class="vview">' + esc(JSON.stringify(getSettings(), null, 2)) + '</div>';
+    }
+    content.innerHTML = h;
+  }
+  W.body.addEventListener('click', function(e){
+    var n = e.target.closest('.fm-nav'); if (n) { view = n.getAttribute('data-view'); draw(); }
+    var o = e.target.closest('[data-open]'); if (o) WM.open(o.getAttribute('data-open'));
+  });
+  $('[data-testid="files-export-btn"]', W.body).addEventListener('click', function(){
+    var sel = $$('[data-exp]', W.body).filter(function(c){ return c.checked; }).map(function(c){ return c.getAttribute('data-exp'); });
+    var m = $('[data-testid="files-export-msg"]', W.body);
+    if (!sel.length) { m.textContent = 'Select at least one data set.'; m.className = 'msg tiny err'; return; }
+    var data = {};
+    if (sel.indexOf('vault') > -1) data.vault = uget('vault', []);
+    if (sel.indexOf('notes') > -1) data.notes = uget('notes', '');
+    if (sel.indexOf('clicker') > -1) data.clicker = uget('clicker', null);
+    if (sel.indexOf('system') > -1) { data.installedApps = getInstalled(); data.settings = getSettings(); }
+    var payload = { os: 'GOOFY NODE OS', version: VERSION, operator: USER, exportedAt: new Date().toISOString(), note: 'Plain-text export of local demo data. Not encrypted.', data: data };
+    var ok = downloadText(JSON.stringify(payload, null, 2), 'goofy-node-export-' + USER + '-' + stamp() + '.json', 'application/json');
+    m.textContent = ok ? 'Exported: ' + sel.join(', ') : 'Export failed.'; m.className = 'msg tiny ' + (ok ? 'ok' : 'err');
+  });
+  W.refresh = draw;
+  draw();
+}
+
+/* ===================== APP: SETTINGS ===================== */
+function renderSettings(W){
+  var SW = [['#00ff66', 'Neon green (default)'], ['#7cff00', 'Toxic lime'], ['#3dffb0', 'Mint'], ['#ffb000', 'Amber'], ['#ff3df0', 'Magenta'], ['#e6ffe6', 'Phosphor white']];
+  W.body.innerHTML =
+    '<div class="h2 glow" style="margin-bottom:12px">SETTINGS</div>' +
+    '<div class="set-sec"><div class="h3">accent color</div><div class="swatches">' + SW.map(function(s){ return '<button class="sw" data-color="' + s[0] + '" title="' + s[1] + '" data-testid="settings-accent-' + s[0].slice(1) + '"><span style="background:' + s[0] + '"></span></button>'; }).join('') +
+    '<input type="color" class="sw-custom" data-testid="settings-accent-custom" title="custom color"><button class="btn sm" data-testid="settings-accent-reset">Reset to green</button></div><div class="tiny muted" style="margin-top:8px">current: <span data-testid="settings-accent-value"></span></div></div>' +
+    '<div class="set-sec"><div class="h3">display</div>' +
+    '<div class="toggle"><div><div>CRT scanlines</div><div class="tiny muted">animated scanline overlay</div></div><button class="switch" data-key="scan" data-testid="settings-scanlines-toggle" aria-label="toggle scanlines"></button></div>' +
+    '<div class="toggle"><div><div>Desktop grid</div><div class="tiny muted">animated background grid</div></div><button class="switch" data-key="grid" data-testid="settings-grid-toggle" aria-label="toggle grid"></button></div></div>' +
+    '<div class="set-sec"><div class="h3">apps</div><div class="row"><button class="btn danger" data-testid="settings-reset-apps-btn">Reset installed apps</button><span class="tiny muted">keeps only the system apps (Terminal, File Manager, Settings, App Store)</span></div><div class="msg" data-testid="settings-apps-msg"></div></div>' +
+    '<div class="set-sec"><div class="h3">system</div><table class="ftable"><tbody>' +
+      '<tr><td class="muted">version</td><td data-testid="settings-version">GOOFY NODE OS v' + VERSION + '</td></tr>' +
+      '<tr><td class="muted">operator</td><td>' + esc(USER) + '</td></tr>' +
+      '<tr><td class="muted">storage</td><td>' + (Store.ok() ? 'browser localStorage (not encrypted)' : '<span class="warn-t">unavailable: memory only, lost on reload</span>') + '</td></tr></tbody></table>' +
+      '<div class="row" style="margin-top:10px"><button class="btn" data-testid="settings-download-html-btn">' + svg('download') + 'Download HTML file</button>' + (/^https?:/.test(location.protocol) ? '<a class="btn" href="' + esc(location.href.split('#')[0].split('?')[0]) + '" target="_blank" rel="noopener" data-testid="settings-html-url">Open file URL</a>' : '') + '</div></div>' +
+    '<div class="set-sec"><div class="h3">session</div><button class="btn danger" data-testid="settings-signout-btn">' + svg('logout') + 'Sign out</button></div>';
+  var T = function(id){ return $('[data-testid="' + id + '"]', W.body); }, armed = 0;
+  function draw(){
+    var s = getSettings();
+    $$('.sw', W.body).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-color').toLowerCase() === s.accent.toLowerCase()); });
+    T('settings-accent-custom').value = s.accent;
+    T('settings-accent-value').textContent = s.accent;
+    $$('.switch', W.body).forEach(function(b){ var on = !!s[b.getAttribute('data-key')]; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.setAttribute('data-state', on ? 'on' : 'off'); });
+  }
+  function update(patch){ var s = getSettings(); Object.keys(patch).forEach(function(k){ s[k] = patch[k]; }); var ok = saveSettings(s); draw(); if (!ok) toast('Applied for this session only: storage unavailable.', 'warn'); }
+  W.body.addEventListener('click', function(e){
+    var sw = e.target.closest('.sw'); if (sw) update({ accent: sw.getAttribute('data-color') });
+    var tg = e.target.closest('.switch'); if (tg) { var k = tg.getAttribute('data-key'); var p = {}; p[k] = !getSettings()[k]; update(p); }
+  });
+  T('settings-accent-custom').addEventListener('input', function(e){ update({ accent: e.target.value }); });
+  T('settings-accent-reset').addEventListener('click', function(){ update({ accent: DEFAULT_SETTINGS.accent }); });
+  var rb = T('settings-reset-apps-btn');
+  rb.addEventListener('click', function(){
+    if (Date.now() - armed > 3000) { armed = Date.now(); rb.textContent = 'Click again to confirm'; setTimeout(function(){ rb.textContent = 'Reset installed apps'; }, 3000); return; }
+    armed = 0; rb.textContent = 'Reset installed apps';
+    getInstalled().forEach(function(id){ if (DEFAULT_INSTALLED.indexOf(id) === -1) WM.close(id); });
+    var ok = saveInstalled(DEFAULT_INSTALLED.slice());
+    appsChanged();
+    var m = T('settings-apps-msg'); m.textContent = 'Installed-app list reset to system apps' + (ok ? '.' : ' (session only).'); m.className = 'msg ' + (ok ? 'ok' : 'warn');
+  });
+  T('settings-download-html-btn').addEventListener('click', downloadSelf);
+  T('settings-signout-btn').addEventListener('click', signOut);
+  W.refresh = draw;
+  draw();
+}
+
+/* ===================== APP: MINESWEEPER ===================== */
+function renderMines(W){
+  var N = 8, MINES = 10, board, state, timer = null, t0 = 0, flagMode = false;
+  W.body.innerHTML = '<div class="ms"><div class="ms-bar"><div class="ms-lcd" data-testid="mines-counter" title="mines left">010</div><button class="btn primary sm" data-testid="mines-new-game-btn">New Game</button><button class="btn sm" data-testid="mines-flag-mode-btn" title="for touch screens">Flag mode: off</button><div class="ms-lcd" data-testid="mines-timer" title="time">000</div></div>' +
+    '<div class="ms-grid" data-testid="mines-grid"></div><div class="ms-status" data-testid="mines-status"></div><div class="tiny muted">left-click: reveal // right-click: flag // first click is always safe</div></div>';
+  var grid = $('.ms-grid', W.body), statusEl = $('.ms-status', W.body), counter = $('[data-testid="mines-counter"]', W.body), timerEl = $('[data-testid="mines-timer"]', W.body);
+  var NUMC = ['', '#00ff66', '#b6ff00', '#ffb800', '#ff7a00', '#ff3344', '#ff3df0', '#ffffff', '#ffffff'];
+  function nb(i){ var r = Math.floor(i / N), c = i % N, out = []; for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++) { if (!dr && !dc) continue; var rr = r + dr, cc = c + dc; if (rr >= 0 && rr < N && cc >= 0 && cc < N) out.push(rr * N + cc); } return out; }
+  function stopTimer(){ if (timer) { clearInterval(timer); timer = null; } }
+  function newGame(){
+    stopTimer();
+    board = []; for (var i = 0; i < N * N; i++) board.push({ mine: false, adj: 0, rev: false, flag: false });
+    state = 'ready'; timerEl.textContent = '000';
+    setStatus('ready. 10 mines hidden.', '');
+    draw();
+  }
+  function place(safe){
+    var placed = 0;
+    while (placed < MINES) { var i = Math.floor(Math.random() * N * N); if (i === safe || board[i].mine) continue; board[i].mine = true; placed++; }
+    board.forEach(function(c, i){ c.adj = nb(i).filter(function(j){ return board[j].mine; }).length; });
+  }
+  function setStatus(t, cls){ statusEl.textContent = t; statusEl.className = 'ms-status ' + (cls || ''); statusEl.setAttribute('data-state', state); }
+  function reveal(i){
+    if (state === 'won' || state === 'lost') return;
+    var c = board[i]; if (c.rev || c.flag) return;
+    if (state === 'ready') {
+      place(i); state = 'play'; t0 = Date.now();
+      timer = setInterval(function(){ timerEl.textContent = String(Math.min(999, Math.floor((Date.now() - t0) / 1000))).padStart(3, '0'); }, 250);
+      setStatus('sweeping...', '');
+    }
+    if (c.mine) { c.rev = true; c.boom = true; lose(); return; }
+    var stack = [i];
+    while (stack.length) {
+      var k = stack.pop(), cell = board[k];
+      if (cell.rev || cell.flag) continue;
+      cell.rev = true;
+      if (cell.adj === 0) nb(k).forEach(function(j){ if (!board[j].rev && !board[j].mine) stack.push(j); });
+    }
+    var safeLeft = board.filter(function(x){ return !x.mine && !x.rev; }).length;
+    if (safeLeft === 0) win();
+    draw();
+  }
+  function toggleFlag(i){
+    if (state === 'won' || state === 'lost') return;
+    var c = board[i]; if (c.rev) return;
+    c.flag = !c.flag; draw();
+  }
+  function lose(){ state = 'lost'; stopTimer(); board.forEach(function(c){ if (c.mine) c.rev = true; }); setStatus('BOOM. node lost. press New Game.', 'err-t'); draw(); }
+  function win(){ state = 'won'; stopTimer(); board.forEach(function(c){ if (c.mine) c.flag = true; }); setStatus('BOARD CLEARED. you win in ' + timerEl.textContent.replace(/^0+/, '') + 's!', 'ok-t'); }
+  function draw(){
+    var flags = board.filter(function(c){ return c.flag; }).length;
+    counter.textContent = String(Math.max(-99, MINES - flags)).padStart(3, '0');
+    grid.innerHTML = board.map(function(c, i){
+      var cls = 'mc', txt = '', st = 'hidden';
+      if (c.rev) {
+        cls += ' rev'; st = 'revealed';
+        if (c.mine) { cls += c.boom ? ' boom' : ' mine'; txt = '✹'; st = 'mine'; }
+        else if (c.adj) txt = '<span style="color:' + NUMC[c.adj] + '">' + c.adj + '</span>';
+      } else if (c.flag) {
+        cls += ' flag'; txt = '⚑'; st = 'flagged';
+        if (state === 'lost' && !c.mine) { cls += ' wrongflag'; }
+      }
+      return '<button class="' + cls + '" data-i="' + i + '" data-state="' + st + '" data-testid="mines-cell-' + Math.floor(i / N) + '-' + (i % N) + '" aria-label="cell ' + Math.floor(i / N) + ',' + (i % N) + '">' + txt + '</button>';
+    }).join('');
+  }
+  grid.addEventListener('click', function(e){ var b = e.target.closest('.mc'); if (!b) return; var i = +b.getAttribute('data-i'); if (flagMode) toggleFlag(i); else reveal(i); });
+  grid.addEventListener('contextmenu', function(e){ e.preventDefault(); var b = e.target.closest('.mc'); if (b) toggleFlag(+b.getAttribute('data-i')); });
+  $('[data-testid="mines-new-game-btn"]', W.body).addEventListener('click', newGame);
+  var fm = $('[data-testid="mines-flag-mode-btn"]', W.body);
+  fm.addEventListener('click', function(){ flagMode = !flagMode; fm.textContent = 'Flag mode: ' + (flagMode ? 'on' : 'off'); fm.classList.toggle('primary', flagMode); });
+  W.cleanup.push(stopTimer);
+  newGame();
+}
+
+/* ===================== APP: GOOFY CLICKER ===================== */
+var UPGRADES = [
+  { id: 'cable', name: 'Overclocked Cable', add: 1, base: 15, desc: '+1 credit per click' },
+  { id: 'mouse', name: 'Quantum Mouse', add: 5, base: 100, desc: '+5 credits per click' },
+  { id: 'cluster', name: 'Node Cluster', add: 25, base: 750, desc: '+25 credits per click' },
+  { id: 'oogy', name: 'Blessing of oogy', add: 120, base: 6000, desc: '+120 credits per click' }
+];
+function renderClicker(W){
+  var s = uget('clicker', null);
+  if (!s || typeof s !== 'object') s = { credits: 0, total: 0, owned: {} };
+  s.owned = s.owned || {};
+  function per(){ return 1 + UPGRADES.reduce(function(a, u){ return a + u.add * (s.owned[u.id] || 0); }, 0); }
+  function cost(u){ return Math.floor(u.base * Math.pow(1.6, s.owned[u.id] || 0)); }
+  W.body.innerHTML = '<div class="ck"><div class="ck-main" data-testid="clicker-area"><div class="tiny muted upper">credits</div><div class="ck-score" data-testid="clicker-score">0</div><div class="small muted"><span data-testid="clicker-per-click">1</span> credits / click</div>' +
+    '<button class="cube-btn" data-testid="clicker-cube" aria-label="mine credits"><div class="cube-scene"><div class="cube"><div class="f f1"></div><div class="f f2"></div><div class="f f3"></div><div class="f f4"></div><div class="f f5"></div><div class="f f6"></div></div></div></button>' +
+    '<div class="tiny muted">lifetime: <span data-testid="clicker-total">0</span></div></div>' +
+    '<div class="col"><div class="h3">UPGRADE SHOP</div><div class="col" data-testid="clicker-shop"></div><button class="btn danger sm" data-testid="clicker-reset-btn" style="margin-top:6px">Reset progress</button></div></div>';
+  var area = $('.ck-main', W.body), scene = $('.cube-scene', W.body), shop = $('[data-testid="clicker-shop"]', W.body), armed = 0;
+  function save(){ uset('clicker', s); }
+  function draw(){
+    $('[data-testid="clicker-score"]', W.body).textContent = fmtNum(s.credits);
+    $('[data-testid="clicker-per-click"]', W.body).textContent = fmtNum(per());
+    $('[data-testid="clicker-total"]', W.body).textContent = fmtNum(s.total);
+    shop.innerHTML = UPGRADES.map(function(u){
+      var c = cost(u);
+      return '<div class="upg"><div class="row" style="justify-content:space-between"><span class="un">' + u.name + '</span><span class="badge" data-testid="clicker-owned-' + u.id + '">x' + (s.owned[u.id] || 0) + '</span></div><div class="tiny muted">' + u.desc + '</div>' +
+        '<button class="btn sm' + (s.credits >= c ? ' primary' : '') + '" data-buy="' + u.id + '" data-testid="clicker-buy-' + u.id + '"' + (s.credits >= c ? '' : ' disabled') + '>Buy: ' + fmtNum(c) + ' cr</button></div>';
+    }).join('');
+  }
+  $('.cube-btn', W.body).addEventListener('click', function(e){
+    var p = per(); s.credits += p; s.total += p; save(); draw();
+    scene.classList.remove('pop'); void scene.offsetWidth; scene.classList.add('pop');
+    var r = area.getBoundingClientRect(), f = document.createElement('span');
+    f.className = 'floater'; f.textContent = '+' + fmtNum(p);
+    var x = e.clientX ? e.clientX - r.left : r.width / 2, y = e.clientY ? e.clientY - r.top : r.height / 2;
+    f.style.left = x + 'px'; f.style.top = (y - 20) + 'px';
+    area.appendChild(f); setTimeout(function(){ f.remove(); }, 900);
+  });
+  shop.addEventListener('click', function(e){
+    var b = e.target.closest('[data-buy]'); if (!b) return;
+    var u = UPGRADES.filter(function(x){ return x.id === b.getAttribute('data-buy'); })[0], c = cost(u);
+    if (s.credits < c) { toast('Not enough credits.', 'err'); return; }
+    s.credits -= c; s.owned[u.id] = (s.owned[u.id] || 0) + 1; save(); draw();
+    toast(u.name + ' purchased. Now ' + fmtNum(per()) + ' credits per click.', 'ok');
+  });
+  var rb = $('[data-testid="clicker-reset-btn"]', W.body);
+  rb.addEventListener('click', function(){
+    if (Date.now() - armed > 3000) { armed = Date.now(); rb.textContent = 'Click again to confirm'; setTimeout(function(){ rb.textContent = 'Reset progress'; }, 3000); return; }
+    armed = 0; rb.textContent = 'Reset progress';
+    s = { credits: 0, total: 0, owned: {} }; save(); draw();
+  });
+  W.refresh = draw;
+  draw();
+}
+
+/* ===================== APP: GAMES LAUNCHER ===================== */
+function renderGames(W){
+  var GAMES = ['minesweeper', 'clicker'];
+  function draw(){
+    W.body.innerHTML = '<div class="h2 glow" style="margin-bottom:4px">GAMES</div><div class="muted small" style="margin-bottom:14px">pick a game to launch</div><div class="gl">' + GAMES.map(function(id){
+      var a = APPS[id], inst = isInstalled(id);
+      return '<div class="gcard" data-testid="games-card-' + id + '">' + svg(a.icon) + '<div class="ac-name">' + esc(a.name) + '</div><div class="tiny muted">' + esc(a.desc) + '</div>' +
+        '<button class="btn primary sm" data-game="' + id + '" data-testid="games-launch-' + id + '">' + (inst ? 'Launch' : 'Install &amp; Launch') + '</button></div>';
+    }).join('') + '</div>';
+  }
+  W.body.addEventListener('click', function(e){
+    var b = e.target.closest('[data-game]'); if (!b) return;
+    var id = b.getAttribute('data-game');
+    if (!isInstalled(id)) installApp(id);
+    WM.open(id);
+  });
+  W.refresh = draw;
+  draw();
+}
+
+/* ===================== global error visibility ===================== */
+window.addEventListener('error', function(e){
+  var m = e && e.message ? e.message : 'unknown error';
+  if (!booted) bootFail(new Error(m));
+  else toast('System error: ' + m, 'err');
+});
+window.addEventListener('unhandledrejection', function(e){ if (booted) toast('System error: ' + (e.reason && e.reason.message ? e.reason.message : 'async failure'), 'err'); });
+
+/* ===================== start ===================== */
+try {
+  $('#boot-sysinfo').textContent = 'storage: ' + (Store.ok() ? 'localStorage' : 'memory-only') + ' / screen ' + window.innerWidth + 'x' + window.innerHeight;
+  runBoot();
+} catch (e) {
+  bootFail(e);
+}
+})();
+</script></body></html>
